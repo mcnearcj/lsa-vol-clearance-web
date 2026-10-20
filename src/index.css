@@ -292,8 +292,6 @@ textarea { min-height: 64px; resize: vertical; }
 .steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
 .steps li { padding-left: 2px; }
 .steps li::marker { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-.form-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.form-box p { color: var(--muted); font-size: 0.92rem; }
 .missing { background: var(--warn-soft); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; width: 100%; font-size: 0.92rem; }
 .links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .links a { font-weight: 600; }
@@ -360,7 +358,7 @@ address { font-style: normal; background: var(--surface-2); border-radius: 10px;
   .details { padding: 14px; }
   .panel, .overview, .intro { padding: 16px; }
   .profile fieldset { padding: 12px 14px 16px; }
-  .form-box .primary { width: 100%; }
+  .forms-panel > .row .primary { width: 100%; }
 }
 
 /* Whose info is on this device: shown on every page, for shared computers. */
@@ -375,26 +373,7 @@ address { font-style: normal; background: var(--surface-2); border-radius: 10px;
 .who { color: var(--text); }
 .notice.stale { background: var(--warn-soft); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 
-/* Signing all forms on screen */
-.sign-all { background: var(--accent-soft); border-radius: var(--radius); padding: 14px 16px; display: flex; gap: 12px 16px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
-.sign-all > div { flex: 1 1 260px; min-width: 0; }
-.sign-all p { color: var(--muted); font-size: 0.92rem; margin-top: 2px; }
-.sign-dialog {
-  width: min(560px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  padding: 18px;
-  box-shadow: 0 10px 40px rgb(0 0 0 / 25%);
-}
-.sign-dialog::backdrop { background: rgb(10 16 30 / 55%); }
-.sign-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-.sign-head h2 { font-family: var(--font-display); font-size: 1.35rem; }
-.sign-section { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.sign-section legend { font-weight: 700; padding: 0 6px; margin-left: -6px; }
+/* Signature pad and SSN box */
 .ssn-row { display: flex; gap: 8px; align-items: center; }
 .ssn-row input { max-width: 220px; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .ssn-row input.masked { -webkit-text-security: disc; }
@@ -403,10 +382,25 @@ address { font-style: normal; background: var(--surface-2); border-radius: 10px;
 .pad-line { position: absolute; left: 16px; right: 16px; bottom: 34px; border-bottom: 1.5px solid #b9c2d3; pointer-events: none; }
 .pad-hint { position: absolute; inset: 0 0 auto; top: 50%; transform: translateY(-50%); text-align: center; color: #8a94a8; font-size: 0.9rem; pointer-events: none; }
 .typed-preview { font-size: 2.6rem; line-height: 1.2; color: #14215c; background: #ffffff; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 16px; min-height: 76px; overflow-x: auto; white-space: nowrap; }
-@media (max-width: 520px) {
-  .sign-dialog { padding: 14px; }
-  .sign-all .primary { width: 100%; }
-}
-.checklist-offer { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.overview .row { margin-top: -2px; }
-.overview .small-btn { margin-left: -10px; }
+
+/* Forms to sign: one panel instead of a card per form */
+.forms-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.forms-panel .pick { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.forms-panel .pick legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+.forms-panel .pick ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.forms-panel .pick li { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px 14px; flex-wrap: wrap; padding: 9px 0; border-top: 1px solid var(--line); }
+.forms-panel .pick li:first-child { border-top: 0; padding-top: 0; }
+.forms-panel .pick li .check { flex: 1 1 240px; min-width: 0; }
+.forms-panel .pick li > a { font-size: 0.88rem; font-weight: 600; white-space: nowrap; margin-top: 2px; }
+.forms-panel .check small { display: block; color: var(--muted); font-size: 0.82rem; }
+.forms-panel .checklist-pick { background: var(--surface-2); border-radius: 10px; padding: 10px 12px !important; margin-top: 4px; border-top: 0 !important; }
+.small-seg button { padding: 5px 12px; font-size: 0.85rem; }
+.ready { background: var(--ok-soft); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.ready h4 { font-size: 1rem; }
+.ready ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ready li { display: flex; justify-content: space-between; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+.ready li > div:first-child { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; }
+.ready small { color: var(--muted); font-size: 0.85rem; }
+.ready a.secondary, .ready a.ghost { text-decoration: none; min-height: 38px; }
+.handed-in { border-top: 1px solid var(--line); padding-top: 12px; font-weight: 600; }
+.form-pointer { font-size: 0.92rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }

@@ -29,7 +29,7 @@ export const requirements: Requirement[] = [
       'Fill in your information and submit the request. It asks for your Social Security Number; it isn’t required, but it’s recommended.',
       'On the results screen, click the blue “Certification Form” link to open your official certificate. You’re not done until you open it. Print it or save it as a PDF.',
       'Give the printed certificate to your Local Safe Environment Coordinator (LSEC).',
-      'Can’t do it online? Print the Background Check Authorization Form (Checklist #10, below) and email it to punger@allentowndiocese.org instead.',
+      'Can’t do it online? Make the Background Check Authorization Form under “Forms to sign”, sign it, and email it to punger@allentowndiocese.org instead.',
       'Questions about PATCH: the State Police helpline is 1-888-783-7972.',
     ],
     form: { id: 'bgauth', label: 'Background Check Authorization Form' },
@@ -97,7 +97,7 @@ export const requirements: Requirement[] = [
     links: [{ label: 'Read the policy', href: diocese('SexualAbusePolicy2022.pdf') }, policiesPage],
     steps: [
       'Read the policy (link below) or attend a diocesan training presentation.',
-      'Generate the form below. Your name and location are filled in.',
+      'Make it under “Forms to sign”. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
     form: { id: 'sexabuse', label: 'Sexual Abuse Policy Acknowledgment' },
@@ -113,7 +113,7 @@ export const requirements: Requirement[] = [
     links: [{ label: 'Read the Code of Conduct', href: diocese('updated-Code-of-Conduct-PolicyCSAM6-5-25.pdf') }, policiesPage],
     steps: [
       'Read the Code of Conduct (link below) or attend a diocesan training presentation.',
-      'Generate the form below. Your name and location are filled in.',
+      'Make it under “Forms to sign”. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
     form: { id: 'conduct', label: 'Code of Conduct Acknowledgment' },
@@ -129,7 +129,7 @@ export const requirements: Requirement[] = [
     links: [{ label: 'Read the 2025 policy', href: diocese('socialmediaelectroniccommunicationspolicies.pdf') }, policiesPage],
     steps: [
       'Read the policy (link below).',
-      'Generate the form below. Your name and location are filled in.',
+      'Make it under “Forms to sign”. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
     form: { id: 'social', label: 'Social Media Acknowledgment (2025)' },
@@ -205,7 +205,7 @@ export const requirements: Requirement[] = [
     note: 'Social Security Number is for employees only. This site never stores it.',
     links: [],
     steps: [
-      'Generate the form below. Your personal information is filled in.',
+      'Make it under “Forms to sign”. Your personal information is filled in.',
       'Print it, then sign and date it by hand.',
       'Give it to your LSEC, or send it to Janice Woolley, Audit & Training Supervisor, PO Box F, Allentown PA 18105. Your parish or school keeps a copy.',
     ],
@@ -235,7 +235,7 @@ export const requirements: Requirement[] = [
     summary: 'Mail or email a one-page application to the state. Free. Must be less than a year old when you hand it in.',
     time: 'Processing takes about 14 days',
     validYears: 5,
-    note: 'The single-form download leaves the Social Security Number blank to write in by hand. “Sign all forms” can fill it in for you; it’s never stored.',
+    note: 'You can add your Social Security Number when you make your forms, or write it on the printed form. The site never stores it.',
     links: [
       {
         label: 'PA DHS NSOR application (original)',
@@ -243,8 +243,7 @@ export const requirements: Requirement[] = [
       },
     ],
     steps: [
-      'Generate the form below. Your information is filled in and the “Volunteer” purpose box is checked.',
-      'Print it, fill in your Social Security Number, and sign and date it. Or use “Sign all forms” to do all three on screen.',
+      'Make the application under “Forms to sign” on this page. Your information is filled in and the “Volunteer” purpose box is checked. You can add your Social Security Number and signature there, or write them on the printed form.',
       'Submit it one of three ways: mail to Clearance Verification Unit, ChildLine, Department of Human Services, PO Box 8170, Harrisburg, PA 17105-8170; or scan and email to RA-PWNSOR@pa.gov (subject: “NSOR Verification Applicant Last Name”); or hand deliver to the drop box at 2525 North 7th Street, Harrisburg, PA 17110.',
       'Keep a copy as proof of submission. Questions: Clearance Verification Unit, 877-371-5422.',
     ],
@@ -260,8 +259,8 @@ export const groups: { id: GroupId; title: string; intro: string }[] = [
   },
   {
     id: 'sign',
-    title: 'Read and sign',
-    intro: 'Read each policy, download your filled-in form, then print, sign and date it by hand.',
+    title: 'Forms to sign',
+    intro: `Read each policy, then make your forms. They’re filled in with your info. Sign them on screen, or print and sign by hand, then give them to ${site.lsec.name}.`,
   },
   {
     id: 'training',

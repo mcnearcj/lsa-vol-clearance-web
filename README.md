@@ -8,16 +8,16 @@ It is a volunteer-made helper, not an official diocesan site.
 
 ## What it does
 
-- **Checklist**: the diocese's 12 requirements, grouped into background checks, forms to sign, training, and driving.
-  Each has step-by-step instructions, links, a "Mark done" date, and renewal reminders (most last 5 years). A "Start here"
-  panel and a "Next up" card point people at what to do next.
+- **Checklist**: the background checks, trainings and driver form, each with step-by-step instructions, links, a
+  "Mark done" date and renewal reminders (most last 5 years), plus the forms section below. A "Start here" panel walks
+  new volunteers through it.
 - **My info**: entered once and used to fill in the forms. Shows which forms use which details.
-- **Forms**: the Background Check Authorization, the Sexual Abuse, Code of Conduct, Social Media and CPSL
-  acknowledgments, and the NSOR application download as filled-in PDFs to print and sign by hand. The site warns about
-  any details that would be left blank.
-- **Sign all forms**: draw a signature (mouse, finger, or a stylus such as Apple Pencil, with pen pressure) or type it in a
-  handwriting font, optionally enter an SSN, and download all six forms signed, dated and combined into one PDF. The
-  signature and SSN exist only in memory for that one download; they're never saved, synced or sent.
+- **Forms to sign**: the six forms (Sexual Abuse, Code of Conduct, Social Media and CPSL acknowledgments, the
+  Background Check Authorization and the NSOR application) are made together, filled in with the volunteer's info.
+  Pick the forms needed, print and sign by hand or sign on screen (draw with a mouse, finger or stylus, or type), and
+  optionally add an SSN. Nothing downloads on its own: the site lists the files with Open and Download links: one PDF of
+  the chosen forms, and a separate submission checklist for the volunteer to keep. The signature and SSN exist only in
+  memory for that download; they're never saved, synced or sent. One "handed in" checkbox tracks the forms.
 - **Sync** (optional): sign in to keep info and progress in step across devices, end-to-end encrypted.
 - **Help**: who to ask, FAQ, a "Report a problem" form, and erasing data from the device.
 

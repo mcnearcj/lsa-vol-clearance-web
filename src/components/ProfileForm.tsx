@@ -51,7 +51,7 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
             details the forms use
           </span>
         </div>
-        <p className="callout neutral">Your Social Security Number isn’t kept here. Add it in “Sign all forms” when you download (it’s never saved), or write it on the printed form by hand.</p>
+        <p className="callout neutral">Your Social Security Number isn’t kept here. Add it when you make your forms under “Forms to sign” (it’s never saved), or write it on the printed form by hand.</p>
       </div>
 
       <fieldset>

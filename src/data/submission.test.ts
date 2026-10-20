@@ -19,10 +19,16 @@ describe('submissionChecklist', () => {
     ])
   })
 
-  it('marks the forms signed when they were just signed on screen', () => {
-    const s = submissionChecklist({}, '10/20/2026')
+  it('marks the forms in a signed download as signed', () => {
+    const s = submissionChecklist({}, { forms: ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth', 'nsor'], signedOn: '10/20/2026' })
     expect(s[0].items.every((i) => i.done && i.status === 'Signed on screen 10/20/2026')).toBe(true)
     expect(find(s, 'PATCH').done).toBe(false)
+  })
+
+  it('says to sign by hand for an unsigned download, and uses the handed-in checkbox for forms not in it', () => {
+    const s = submissionChecklist({ forms: { status: 'done', completedOn: '2026-09-01' } }, { forms: ['conduct'] })
+    expect(find(s, 'Code of Conduct')).toMatchObject({ done: false, status: expect.stringContaining('print it, then sign') })
+    expect(find(s, 'Sexual Abuse')).toMatchObject({ done: true, status: expect.stringContaining('Handed in') })
   })
 
   it('shows each certificate’s status from the checklist', () => {

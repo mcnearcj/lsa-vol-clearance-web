@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BugReport } from './components/BugReport'
-import { downloadChecklist } from './checklistDownload'
 import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
-import { SignDialog } from './components/SignDialog'
+import { FormsPanel } from './components/FormsPanel'
 import { allFormFields } from './data/formFields'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
-import { standing, type Standing } from './dates'
+import { standing } from './dates'
 import { saveFile } from './save'
-import { isStaleBuildError, STALE_EVENT, STALE_MESSAGE } from './staleBuild'
+import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
-import { emptyProfile, personName, type FormId, type Progress, type Profile } from './types'
+import { emptyProfile, personName, type Progress, type Profile } from './types'
 
 type Tab = 'checklist' | 'info' | 'sync' | 'help'
 
@@ -70,7 +69,6 @@ export default function App() {
   const [cleared, setCleared] = useState(false)
   const [stale, setStale] = useState(false)
   const [remoteNote, setRemoteNote] = useState(false)
-  const [signOpen, setSignOpen] = useState(false)
   const onRemoteUpdate = useCallback(() => setRemoteNote(true), [])
   useEffect(() => {
     if (!remoteNote) return
@@ -114,30 +112,24 @@ export default function App() {
   }, [scrollToReport, tab])
 
   const st = (id: string) => standing(orderedRequirements.find((r) => r.id === id)!, progress[id]).standing
-  const counted = orderedRequirements.filter((r) => st(r.id) !== 'na')
-  const doneCount = counted.filter((r) => ['current', 'expiring'].includes(st(r.id))).length
-  const renew = counted.filter((r) => ['expiring', 'expired'].includes(st(r.id))).length
-  const allDone = counted.length > 0 && doneCount === counted.length && renew === 0
-  const pct = counted.length ? Math.round((doneCount / counted.length) * 100) : 0
+  // The signable forms are made together in "Forms to sign" and count as one item; the rest are tracked one by one.
+  const tracked = orderedRequirements.filter((r) => r.group !== 'sign' && st(r.id) !== 'na')
+  const formsDone = progress.forms?.status === 'done'
+  const total = tracked.length + 1
+  const doneCount = tracked.filter((r) => ['current', 'expiring'].includes(st(r.id))).length + (formsDone ? 1 : 0)
+  const renew = tracked.filter((r) => ['expiring', 'expired'].includes(st(r.id))).length
+  const allDone = doneCount === total && renew === 0
+  const pct = Math.round((doneCount / total) * 100)
 
-  // The most useful thing to do next: anything expired, then anything started, then the first not started, then anything expiring.
-  const nextUp = (['expired', 'started', 'todo', 'expiring'] as Standing[])
-    .map((s) => orderedRequirements.find((r) => st(r.id) === s))
-    .find(Boolean)
+  const goToForms = () => {
+    setTabState('checklist')
+    requestAnimationFrame(() => document.getElementById('forms')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   const infoFilled = allFormFields.filter((k) => String(profile[k]).trim()).length
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
   const who = personName(profile)
   const hasData = Boolean(who) || Object.keys(progress).length > 0
-
-  // After signing on screen, every requirement with one of those forms counts as started (it still has to be handed in).
-  const markSigned = (forms: FormId[]) => {
-    const next = { ...progress }
-    for (const r of orderedRequirements) {
-      if (r.form && forms.includes(r.form.id) && (next[r.id]?.status ?? 'todo') === 'todo') next[r.id] = { ...next[r.id], status: 'started' }
-    }
-    setProgress(next)
-  }
 
   const exportBackup = () => saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
@@ -260,7 +252,7 @@ export default function App() {
                 <div>
                   <p className="big">
                     {doneCount}
-                    <span> of {counted.length} done</span>
+                    <span> of {total} done</span>
                   </p>
                   {renew > 0 && <p className="warn-text">{renew === 1 ? '1 item needs renewing' : `${renew} items need renewing`}</p>}
                 </div>
@@ -272,16 +264,6 @@ export default function App() {
               </div>
               <div className="bar" role="progressbar" aria-label="Checklist progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                 <div style={{ width: `${pct}%` }} />
-              </div>
-              <div className="row">
-                <button
-                  className="ghost small-btn"
-                  onClick={() =>
-                    downloadChecklist(profile, progress).catch((e) => (isStaleBuildError(e) ? setStale(true) : setMessage('The checklist could not be made. Try again.')))
-                  }
-                >
-                  Print my submission checklist
-                </button>
               </div>
               {sync !== 'unavailable' && (
                 <p className="sync-status">
@@ -327,11 +309,10 @@ export default function App() {
                     <strong>Start the background checks early.</strong> Some take 2–3 weeks to come back.
                   </li>
                   <li>
-                    <strong>Sign the forms.</strong> Each one is filled in for you. Print and sign on paper, or{' '}
-                    <button className="link" onClick={() => setSignOpen(true)}>
-                      sign them all on screen
+                    <strong>Make your forms.</strong> They’re filled in for you: print and sign them, or sign on screen.{' '}
+                    <button className="link" onClick={goToForms}>
+                      Go to Forms to sign
                     </button>
-                    .
                   </li>
                   <li>
                     <strong>Give everything to {site.lsec.name},</strong> {site.schoolName}’s Local Safe Environment Coordinator (LSEC).
@@ -340,67 +321,46 @@ export default function App() {
               </section>
             )}
 
-            {allDone ? (
+            {allDone && (
               <section className="next all-done">
                 <h2>You’re all set</h2>
-                <p>Every requirement is complete. Come back when one is close to its renewal date.</p>
+                <p>Everything is complete. Come back when something is close to its renewal date.</p>
               </section>
-            ) : (
-              nextUp && (
-                <section className="next" aria-labelledby="next-h">
-                  <h2 id="next-h">Next up</h2>
-                  <ul className="cards">
-                    <RequirementCard
-                      key={`next-${nextUp.id}`}
-                      req={nextUp}
-                      progress={progress[nextUp.id]}
-                      profile={profile}
-                      onChange={(p) => setProgress({ ...progress, [nextUp.id]: p })}
-                      onEditInfo={() => setTab('info')}
-                      onSignAll={() => setSignOpen(true)}
-                      defaultOpen
-                    />
-                  </ul>
-                </section>
-              )
             )}
 
             {groups.map((g) => {
               const items = orderedRequirements.filter((r) => r.group === g.id)
-              const gDone = items.filter((r) => ['current', 'expiring', 'na'].includes(st(r.id))).length
+              const gDone = g.id === 'sign' ? (formsDone ? 1 : 0) : items.filter((r) => ['current', 'expiring', 'na'].includes(st(r.id))).length
+              const gTotal = g.id === 'sign' ? 1 : items.length
               return (
                 <section key={g.id} className="group" aria-labelledby={`g-${g.id}`}>
                   <div className="group-head">
                     <h2 id={`g-${g.id}`}>{g.title}</h2>
                     <span className="count">
-                      {gDone}/{items.length}
+                      {gDone}/{gTotal}
                     </span>
                   </div>
                   <p className="group-intro">{g.intro}</p>
-                  {g.id === 'sign' && (
-                    <div className="sign-all">
-                      <div>
-                        <strong>Sign all six forms on screen</strong>
-                        <p>Draw or type your signature once. Every form is filled in, signed and dated, and downloaded as one PDF.</p>
-                      </div>
-                      <button className="primary" onClick={() => setSignOpen(true)}>
-                        Sign all forms
-                      </button>
-                    </div>
+                  {g.id === 'sign' ? (
+                    <FormsPanel
+                      profile={profile}
+                      progress={progress}
+                      onFormsProgress={(p) => setProgress({ ...progress, forms: p })}
+                      onEditInfo={() => setTab('info')}
+                    />
+                  ) : (
+                    <ul className="cards">
+                      {items.map((r) => (
+                        <RequirementCard
+                          key={r.id}
+                          req={r}
+                          progress={progress[r.id]}
+                          onChange={(p) => setProgress({ ...progress, [r.id]: p })}
+                          onGoToForms={goToForms}
+                        />
+                      ))}
+                    </ul>
                   )}
-                  <ul className="cards">
-                    {items.map((r) => (
-                      <RequirementCard
-                        key={r.id}
-                        req={r}
-                        progress={progress[r.id]}
-                        profile={profile}
-                        onChange={(p) => setProgress({ ...progress, [r.id]: p })}
-                        onEditInfo={() => setTab('info')}
-                        onSignAll={() => setSignOpen(true)}
-                      />
-                    ))}
-                  </ul>
                 </section>
               )
             })}
@@ -510,7 +470,7 @@ export default function App() {
                   Two of the state’s online systems also ask for it when you apply there: the <strong>Child Abuse History</strong> clearance (include it, or your results take longer) and <strong>PATCH</strong> (optional, but recommended).
                 </dd>
                 <dt>How is my Social Security Number handled here?</dt>
-                <dd>It’s only asked for in the “Sign all forms” window, and only to fill in that one download. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
+                <dd>It’s only asked for under “Forms to sign”, and only to fill in the files you make there. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
                 <dt>Why did my sign-in email come from Supabase?</dt>
@@ -569,8 +529,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      <SignDialog open={signOpen} profile={profile} progress={progress} onClose={() => setSignOpen(false)} onEditInfo={() => setTab('info')} onSigned={markSigned} />
 
       <footer className="foot">
         <p>

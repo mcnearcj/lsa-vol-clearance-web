@@ -1,25 +1,13 @@
 import { useId, useState } from 'react'
-import { missingFields } from '../data/formFields'
 import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
-import { saveFile } from '../save'
-import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
-import { personName, type ItemProgress, type Profile, type Requirement } from '../types'
+import type { ItemProgress, Requirement } from '../types'
 
 interface Props {
   req: Requirement
   progress: ItemProgress | undefined
-  profile: Profile
   onChange: (p: ItemProgress) => void
-  onEditInfo: () => void
-  /** Opens on-screen signing for all forms at once. */
-  onSignAll?: () => void
-  defaultOpen?: boolean
-}
-
-const loadBytes = async (file: string) => {
-  const res = await fetch(`${import.meta.env.BASE_URL}${file}`)
-  if (!res.ok) throw new Error(`Could not load the blank form (${file}). Check your connection and try again.`)
-  return new Uint8Array(await res.arrayBuffer())
+  /** Scrolls to "Forms to sign", where an item's form is made. */
+  onGoToForms: () => void
 }
 
 export function StatusIcon({ st }: { st: Standing }) {
@@ -64,12 +52,8 @@ export function StatusIcon({ st }: { st: Standing }) {
   }
 }
 
-export function RequirementCard({ req, progress, profile, onChange, onEditInfo, onSignAll, defaultOpen = false }: Props) {
-  const [open, setOpen] = useState(defaultOpen)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [stale, setStale] = useState(false)
-  const [missing, setMissing] = useState<string[] | null>(null)
+export function RequirementCard({ req, progress, onChange, onGoToForms }: Props) {
+  const [open, setOpen] = useState(false)
   const detailsId = useId()
   const cur: ItemProgress = progress ?? { status: 'todo' }
   const { standing: st, expiresOn } = standing(req, progress)
@@ -77,29 +61,6 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
 
   const markDone = () => onChange({ ...cur, status: 'done', completedOn: cur.completedOn || todayISO() })
   const undo = () => onChange({ ...cur, status: 'todo', completedOn: undefined })
-
-  const download = async (force = false) => {
-    if (!req.form) return
-    const gaps = missingFields(req.form.id, profile)
-    if (gaps.length && !force) {
-      setMissing(gaps)
-      return
-    }
-    setMissing(null)
-    setBusy(true)
-    setError('')
-    try {
-      const { fillForm } = await import('../pdf/fill')
-      const { bytes, filename } = await fillForm(req.form.id, profile, loadBytes)
-      saveFile(filename, bytes, 'application/pdf')
-      if (cur.status === 'todo') onChange({ ...cur, status: 'started' })
-    } catch (e) {
-      if (isStaleBuildError(e)) setStale(true)
-      else setError(e instanceof Error ? e.message : 'The form could not be made. Try again.')
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const meta = [req.time, req.validYears ? `Renew every ${req.validYears} years` : req.group !== 'driving' ? 'One time' : null].filter(Boolean)
 
@@ -153,61 +114,13 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
         {req.note && <p className="callout">{req.note}</p>}
 
         {req.form && (
-          <div className="form-box">
-            <div>
-              <strong>{req.form.label}</strong>
-              <p>
-                {personName(profile) ? (
-                  <>
-                    Filled in for <strong className="who">{personName(profile)}</strong>.
-                  </>
-                ) : (
-                  'Filled in with the info on this device.'
-                )}{' '}
-                Print it, then sign and date it by hand.
-              </p>
-            </div>
-            <div className="row">
-              <button className="primary" onClick={() => void download()} disabled={busy}>
-                {busy ? 'Making your form…' : 'Download filled-in form'}
-              </button>
-              {onSignAll && (
-                <button className="ghost" onClick={onSignAll}>
-                  Or sign all forms on screen
-                </button>
-              )}
-            </div>
-            {missing && (
-              <div className="missing" role="alert">
-                <p>
-                  These will be blank on the form: <strong>{missing.join(', ')}</strong>.
-                </p>
-                <div className="row">
-                  <button className="secondary" onClick={onEditInfo}>
-                    Add them in My info
-                  </button>
-                  <button className="ghost" onClick={() => void download(true)}>
-                    Download anyway
-                  </button>
-                </div>
-              </div>
-            )}
-            {stale && (
-              <div className="missing" role="alert">
-                <p>{STALE_MESSAGE}</p>
-                <div className="row">
-                  <button className="primary" onClick={() => window.location.reload()}>
-                    Reload page
-                  </button>
-                </div>
-              </div>
-            )}
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
+          <p className="form-pointer">
+            The {req.form.label} is filled in for you under{' '}
+            <button className="link" onClick={onGoToForms}>
+              Forms to sign
+            </button>
+            .
+          </p>
         )}
 
         <h4>Steps</h4>

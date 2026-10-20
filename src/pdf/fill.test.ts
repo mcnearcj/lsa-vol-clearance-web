@@ -69,14 +69,19 @@ describe('fillAll', () => {
   })
 
   it('signs, dates and locks the forms when given a signature', async () => {
-    const { bytes, filename } = await fillAll(sample, load, { signature, date: '10/20/2026', ssn: '123456789' })
+    const { bytes, filename } = await fillAll(sample, load, { signed: { signature, date: '10/20/2026' }, ssn: '123456789' })
     const doc = await PDFDocument.load(bytes)
     expect(doc.getPageCount()).toBe(ALL_FORMS.length)
     expect(doc.getForm().getFields()).toHaveLength(0) // the NSOR's boxes are flattened into the page
     expect(filename).toBe('volunteer-forms-signed-Testperson-Jordan.pdf')
   })
 
-  it('leaves the SSN box blank unless signing, and formats an SSN as XXX-XX-XXXX', async () => {
+  it('includes only the chosen forms, in checklist order', async () => {
+    const { bytes } = await fillAll(sample, load, {}, ['nsor', 'conduct'])
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(2)
+  })
+
+  it('leaves the SSN box blank unless one is given, and formats an SSN as XXX-XX-XXXX', async () => {
     const { bytes } = await fillForm('nsor', sample, load)
     const unsigned = (await PDFDocument.load(bytes)).getForm()
     expect(unsigned.getTextField('Social Security Number XXXXXXXXX 1').getText() ?? '').toBe('')

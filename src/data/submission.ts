@@ -1,5 +1,5 @@
 import { formatDate, standing } from '../dates'
-import type { Progress, Requirement } from '../types'
+import type { FormId, Progress, Requirement } from '../types'
 import { requirements } from './requirements'
 import { site } from './site'
 
@@ -39,11 +39,23 @@ function statusOf(req: Requirement, progress: Progress): { status: string; done:
   }
 }
 
-/** `signedOn` is set when the forms were just signed on screen (MM/DD/YYYY). */
-export function submissionChecklist(progress: Progress, signedOn?: string): SubmissionSection[] {
-  const formItem = (id: string, detail?: string): SubmissionItem => {
-    const req = byId(id)
-    return signedOn ? { label: req.handIn, detail, status: `Signed on screen ${signedOn}`, done: true } : { label: req.handIn, detail, ...statusOf(req, progress) }
+/** The forms in the download this checklist goes with, and the date if they were signed on screen (MM/DD/YYYY). */
+export interface DownloadInfo {
+  forms: FormId[]
+  signedOn?: string
+}
+
+export function submissionChecklist(progress: Progress, download?: DownloadInfo): SubmissionSection[] {
+  // The signable forms are tracked together: one "handed in" checkbox on the site covers them all.
+  const handedIn = progress.forms?.status === 'done'
+  const formItem = (id: FormId, detail?: string): SubmissionItem => {
+    const label = byId(id).handIn
+    if (download?.forms.includes(id))
+      return download.signedOn
+        ? { label, detail, status: `Signed on screen ${download.signedOn}`, done: true }
+        : { label, detail, status: 'In this download: print it, then sign and date it', done: false }
+    if (handedIn) return { label, detail, status: `Handed in${progress.forms?.completedOn ? ` ${formatDate(progress.forms.completedOn)}` : ''}`, done: true }
+    return { label, detail, status: 'Not done yet', done: false }
   }
   const resultItem = (id: string, detail?: string): SubmissionItem => ({ label: byId(id).handIn, detail, ...statusOf(byId(id), progress) })
 
@@ -51,7 +63,7 @@ export function submissionChecklist(progress: Progress, signedOn?: string): Subm
     {
       title: 'Signed forms',
       intro: `Give these to ${site.lsec.name}.`,
-      items: ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth'].map((id) => formItem(id)),
+      items: (['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth'] as FormId[]).map((id) => formItem(id)),
     },
     {
       title: 'Send to the state',
