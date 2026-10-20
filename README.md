@@ -14,14 +14,16 @@ A small web app that helps Diocese of Allentown volunteers track the Safe Enviro
 By default everything stays in the volunteer's browser (`localStorage`) and PDFs are filled in on the device.
 The app never asks for or stores a Social Security Number; those fields are left blank on the generated forms.
 
-### Optional cloud backup
+### Sync (optional cloud backup)
 
-If you connect a [Supabase](https://supabase.com) project, the **Backup** page lets a volunteer sign in with an email and
-one password and keep a copy of their info and progress for use on another device. The password never leaves the browser:
+If you connect a [Supabase](https://supabase.com) project, the **Sync** tab lets a volunteer sign in with an email and
+one password to keep their info and progress in sync across devices. Sync is on by default after sign-in, with an
+opt-out checkbox the first time they sign in on a device. The password never leaves the browser:
 it is stretched (PBKDF2) into two unrelated values, a sign-in secret that Supabase sees and an AES-GCM key that encrypts
-the backup before upload. The database holds ciphertext only. A password reset restores account access, but an old backup
+the backup before upload. The database holds ciphertext only. The derived key is remembered on the device as a non-extractable key in IndexedDB,
+so people aren't asked for their password on every visit. A password reset restores account access, but an old backup
 can't be opened with the new password; the volunteer saves again from a device that has their data. Without the two
-environment variables below, the page offers only a backup file.
+environment variables below, the tab offers only a backup file.
 
 Setup:
 

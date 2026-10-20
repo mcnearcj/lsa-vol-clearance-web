@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BugReport } from './components/BugReport'
-import { CloudPanel } from './components/CloudPanel'
+import { CloudPanel, type BackupStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { allFormFields } from './data/formFields'
@@ -15,7 +15,7 @@ type Tab = 'checklist' | 'info' | 'backup' | 'help'
 const tabs: [Tab, string][] = [
   ['checklist', 'Checklist'],
   ['info', 'My info'],
-  ['backup', 'Backup'],
+  ['backup', 'Sync'],
   ['help', 'Help'],
 ]
 
@@ -24,6 +24,34 @@ const initialTab = (): Tab => (/(access_token|error_description|type=recovery)/.
 
 const asset = (file: string) => `${import.meta.env.BASE_URL}${file}`
 
+const backupDot: Partial<Record<BackupStatus, 'ok' | 'warn' | 'off'>> = {
+  'signed-out': 'off',
+  locked: 'warn',
+  attention: 'warn',
+  error: 'warn',
+  saving: 'ok',
+  saved: 'ok',
+  manual: 'off',
+}
+
+const backupLabel: Record<BackupStatus, string> = {
+  unavailable: '',
+  'signed-out': 'Not synced',
+  locked: 'Sync paused: sign in again',
+  attention: 'Sync needs your attention',
+  error: 'Sync couldn’t reach the server',
+  saving: 'Syncing…',
+  saved: 'Synced',
+  manual: 'Automatic sync is off',
+}
+
+const timeOf = (iso: string) => {
+  const d = new Date(iso)
+  return d.toDateString() === new Date().toDateString()
+    ? `at ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+    : `on ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+}
+
 export default function App() {
   const [tab, setTabState] = useState<Tab>(initialTab)
   const [profile, setProfile] = useStored<Profile>('profile', emptyProfile)
@@ -31,6 +59,13 @@ export default function App() {
   const [ui, setUi] = useStored('ui', { introDismissed: false })
   const [message, setMessage] = useState('')
   const [confirmErase, setConfirmErase] = useState(false)
+  const [backup, setBackup] = useState<BackupStatus>('unavailable')
+  const [backupAt, setBackupAt] = useState<string | null>(null)
+  const [resetToken, setResetToken] = useState(0)
+  const onBackupStatus = useCallback((s: BackupStatus, at: string | null) => {
+    setBackup(s)
+    setBackupAt(at)
+  }, [])
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Where the person was when they chose "Report a problem", attached to the report.
@@ -90,6 +125,7 @@ export default function App() {
     setProfile(emptyProfile)
     setProgress({})
     setUi({ introDismissed: false })
+    setResetToken((n) => n + 1)
     setConfirmErase(false)
     setMessage('Everything was erased from this device.')
   }
@@ -105,6 +141,7 @@ export default function App() {
           {tabs.map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
               {label}
+              {id === 'backup' && backupDot[backup] && <span className={`tab-dot ${backupDot[backup]}`} aria-label={backupLabel[backup]} />}
             </button>
           ))}
         </nav>
@@ -140,6 +177,17 @@ export default function App() {
               <div className="bar" role="progressbar" aria-label="Checklist progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                 <div style={{ width: `${pct}%` }} />
               </div>
+              {backup !== 'unavailable' && (
+                <p className="backup-line">
+                  <span className={`dot ${backupDot[backup] ?? 'off'}`} aria-hidden />
+                  <span>{backup === 'saved' && backupAt ? `Synced ${timeOf(backupAt)}` : backupLabel[backup]}</span>
+                  {['signed-out', 'locked', 'attention', 'error', 'manual'].includes(backup) && (
+                    <button className="link" onClick={() => setTab('backup')}>
+                      {backup === 'signed-out' ? 'Set up sync' : backup === 'manual' ? 'Sync settings' : 'Fix this'}
+                    </button>
+                  )}
+                </p>
+              )}
             </section>
 
             {!ui.introDismissed && (
@@ -157,6 +205,18 @@ export default function App() {
                       {infoFilled ? `My info (${infoFilled} of ${allFormFields.length} filled)` : 'Go to My info'}
                     </button>
                   </li>
+                  {backup !== 'unavailable' && (
+                    <li>
+                      <strong>Sign in to sync your progress.</strong> Use it on any device. Free, and only you can read it.{' '}
+                      {backup === 'signed-out' ? (
+                        <button className="link" onClick={() => setTab('backup')}>
+                          Set up sync
+                        </button>
+                      ) : (
+                        <span className="small">Done.</span>
+                      )}
+                    </li>
+                  )}
                   <li>
                     <strong>Start the background checks early.</strong> Some take 2–3 weeks to come back.
                   </li>
@@ -167,7 +227,6 @@ export default function App() {
                     <strong>Give everything to your Local Safe Environment Coordinator</strong> (LSEC) at your parish or school.
                   </li>
                 </ol>
-                <p className="small">Your info stays on this device unless you turn on online backup.</p>
               </section>
             )}
 
@@ -229,14 +288,16 @@ export default function App() {
 
         <div hidden={tab !== 'backup'}>
           <div className="page-intro">
-            <h2>Backup</h2>
-            <p>Your info and checklist are saved in this browser. Back them up so you don’t lose them if you clear your browser or switch devices.</p>
+            <h2>Sync</h2>
+            <p>Sign in to keep your info and checklist in sync across your phone and computer, and safe if you clear your browser.</p>
           </div>
 
-          {/* Stays mounted so an unlocked online backup survives switching tabs. */}
+          {/* Stays mounted so an unlocked sync session survives switching tabs. */}
           <CloudPanel
             profile={profile}
             progress={progress}
+            onStatus={onBackupStatus}
+            resetToken={resetToken}
             onRestore={(d) => {
               setProfile({ ...emptyProfile, ...d.profile })
               setProgress(d.progress ?? {})
@@ -245,7 +306,7 @@ export default function App() {
 
           <section className="panel">
             <h3>Backup file</h3>
-            <p>No account needed. Download a file and keep it somewhere private. It contains your name, address and the other details you entered.</p>
+            <p>Prefer not to sign in? Download a file and keep it somewhere private. It contains your name, address and the other details you entered.</p>
             <div className="row">
               <button className="secondary" onClick={exportBackup}>
                 Download backup file
@@ -311,7 +372,7 @@ export default function App() {
                 <dt>Why isn’t my Social Security Number on the forms?</dt>
                 <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
                 <dt>Where is my information kept?</dt>
-                <dd>In this browser on this device. Forms are filled in on your device too. Nothing is uploaded unless you turn on online backup, which scrambles your info with your password before it leaves your device.</dd>
+                <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
                 <dt>Who made this, and how does it work?</dt>
                 <dd>
                   It’s a free, open project. All of the code is public on{' '}
@@ -331,7 +392,7 @@ export default function App() {
 
             <section className="panel">
               <h3>Erase my data</h3>
-              <p>Removes your info and checklist from this browser. It doesn’t delete an online backup; do that on the Backup page.</p>
+              <p>Removes your info and checklist from this browser and signs you out of sync here. It doesn’t delete your synced copy; do that on the Sync page.</p>
               <div className="row">
                 {confirmErase ? (
                   <>
