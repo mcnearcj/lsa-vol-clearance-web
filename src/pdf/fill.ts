@@ -18,12 +18,8 @@ function clean(text: string): string {
     .replace(/[^\x20-\x7E\xA0-\xFF]/g, '?')
 }
 
-function fullName(p: Profile, order: 'first-last' | 'last-first' = 'first-last'): string {
-  const mid = p.middleName.trim()
-  const first = [p.firstName.trim(), mid].filter(Boolean).join(' ')
-  const last = p.lastName.trim()
-  if (order === 'last-first') return [last, first].filter(Boolean).join(', ')
-  return [first, last].filter(Boolean).join(' ')
+function fullName(p: Profile): string {
+  return [p.firstName, p.middleName, p.lastName].map((s) => s.trim()).filter(Boolean).join(' ')
 }
 
 function location(p: Profile): string {

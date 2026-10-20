@@ -22,5 +22,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tests run under Vitest (with Node types); keep them out of the browser build's type check.
+  "exclude": ["src/**/*.test.ts"]
 }

@@ -87,7 +87,7 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
     try {
       const { fillForm } = await import('../pdf/fill')
       const { bytes, filename } = await fillForm(req.form.id, profile, loadBytes)
-      await saveFile(filename, bytes, 'application/pdf')
+      saveFile(filename, bytes, 'application/pdf')
       if (cur.status === 'todo') onChange({ ...cur, status: 'started' })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The form could not be made. Try again.')

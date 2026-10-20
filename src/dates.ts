@@ -8,7 +8,12 @@ export const todayISO = () => {
 export function addYears(iso: string, years: number): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
   if (!m) return null
-  return `${Number(m[1]) + years}-${m[2]}-${m[3]}`
+  const year = Number(m[1]) + years
+  const month = Number(m[2])
+  // Feb 29 has no match in a non-leap year; use Feb 28 rather than an invalid date.
+  const lastDay = new Date(year, month, 0).getDate()
+  const day = Math.min(Number(m[3]), lastDay)
+  return `${year}-${m[2]}-${String(day).padStart(2, '0')}`
 }
 
 export function daysUntil(iso: string, from = todayISO()): number {

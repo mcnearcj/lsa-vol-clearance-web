@@ -8,9 +8,9 @@ export const cloudConfigured = Boolean(url && anonKey)
 
 let client: Promise<SupabaseClient> | null = null
 
-/** Loaded on demand so volunteers who never use cloud backup don't download the library. */
+/** Loaded on demand, so the library isn't downloaded on sites that don't have sync set up. */
 export function getClient(): Promise<SupabaseClient> {
-  if (!cloudConfigured) return Promise.reject(new Error('Cloud backup is not set up for this site.'))
+  if (!cloudConfigured) return Promise.reject(new Error('Sync is not set up for this site.'))
   client ??= import('@supabase/supabase-js').then(({ createClient }) => createClient(url!, anonKey!))
   return client
 }

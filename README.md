@@ -1,73 +1,91 @@
 # Volunteer Clearances
 
-**Live site:** https://mcnearcj.github.io/lsa-vol-clearance-web/
+**Live site:** https://mcnearcj.github.io/lsa-vol-clearance-web/ (early prototype)
 
-A small web app that helps Diocese of Allentown volunteers track the Safe Environment requirements on the
-[Parish & School Volunteer Requirements Checklist](docs/Background%20Check%20List%20Volunteer.pdf) and fill in the forms.
+A web app that helps Diocese of Allentown parish and school volunteers work through the Safe Environment
+[Parish & School Volunteer Requirements Checklist](public/forms/requirements-checklist.pdf) and fill in the forms.
+It is a volunteer-made helper, not an official diocesan site.
 
-- **Checklist**: the 12 requirements with status, completion date, 5-year renewal reminders, and step-by-step instructions.
-- **My info**: entered once, used to pre-fill the forms.
-- **Forms**: Background Check Authorization, Sexual Abuse / Code of Conduct / Social Media / CPSL acknowledgments, and the NSOR application are generated as PDFs to print and sign.
+## What it does
+
+- **Checklist**: the diocese's 12 requirements, grouped into background checks, forms to sign, training, and driving.
+  Each has step-by-step instructions, links, a "Mark done" date, and renewal reminders (most last 5 years). A "Start here"
+  panel and a "Next up" card point people at what to do next.
+- **My info**: entered once and used to fill in the forms. Shows which forms use which details.
+- **Forms**: the Background Check Authorization, the Sexual Abuse, Code of Conduct, Social Media and CPSL
+  acknowledgments, and the NSOR application download as filled-in PDFs to print and sign by hand. The site warns about
+  any details that would be left blank.
+- **Sync** (optional): sign in to keep info and progress in step across devices, end-to-end encrypted.
+- **Help**: who to ask, FAQ, a "Report a problem" form, and erasing data from the device.
 
 ## Privacy
 
-By default everything stays in the volunteer's browser (`localStorage`) and PDFs are filled in on the device.
-The app never asks for or stores a Social Security Number; those fields are left blank on the generated forms.
+- Everything is stored in the volunteer's own browser (`localStorage`). PDFs are filled in on the device.
+- The site never asks for a Social Security Number; those boxes stay blank to be written by hand.
+- Fonts and all other assets are served with the site, so a page view contacts no third parties.
+- **Sync** encrypts on the device before upload. The password is stretched with PBKDF2 into two unrelated values: a
+  sign-in secret (the only thing Supabase sees) and an AES-GCM key that encrypts the data. The database holds ciphertext
+  only, and the site owner can't read it. The key is remembered on the device as a non-extractable key in IndexedDB so
+  people aren't asked for their password on every visit. A password reset restores the account but can't open an old
+  synced copy; the site replaces it from the device.
 
-### Sync (optional cloud backup)
+## Setting up sync and bug reports (Supabase)
 
-If you connect a [Supabase](https://supabase.com) project, the **Sync** tab lets a volunteer sign in with an email and
-one password to keep their info and progress in sync across devices. Sync is on by default after sign-in, with an
-opt-out checkbox the first time they sign in on a device. The password never leaves the browser:
-it is stretched (PBKDF2) into two unrelated values, a sign-in secret that Supabase sees and an AES-GCM key that encrypts
-the backup before upload. The database holds ciphertext only. The derived key is remembered on the device as a non-extractable key in IndexedDB,
-so people aren't asked for their password on every visit. A password reset restores account access, but an old backup
-can't be opened with the new password; the volunteer saves again from a device that has their data. Without the two
-environment variables below, the tab offers only a backup file.
+Both are optional. Without them the Sync tab offers a backup file, and "Report a problem" offers a pre-filled GitHub issue.
 
-Setup:
+1. Create a free [Supabase](https://supabase.com) project.
+2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates the `vault` table (one encrypted row
+   per person, readable only by its owner) and the `bug_reports` table (anyone can submit; nobody can read through the
+   site). Projects set up before bug reports existed only need [`supabase/bug_reports.sql`](supabase/bug_reports.sql).
+3. In **Authentication → URL Configuration**, set the **Site URL** and add `<site URL>/**` under **Redirect URLs**.
+4. Give the site the project URL and anon key (Project Settings → API; the anon key is meant to be public):
+   - GitHub Pages: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Secrets and variables →
+     Actions → **Variables**, then re-run the deploy.
+   - Local builds: copy `.env.example` to `.env.local` and fill it in.
+5. Read bug reports in the dashboard under **Table Editor → bug_reports**.
 
-1. Create a free Supabase project.
-2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates one `vault` table with row-level security so each user can only touch their own row.
-3. In **Authentication → URL Configuration**, set the Site URL to wherever you host the site.
-4. Copy `.env.example` to `.env.local` and fill in the project URL and anon key (Project Settings → API), then `npm run build`.
+Sign-in emails come from Supabase's built-in sender, and the site tells people so. To send them from your own
+address (and edit the email templates), set up custom SMTP under **Authentication → Emails → SMTP Settings**, then
+update the sender named in `src/components/CloudPanel.tsx` and the Help page FAQ in `src/App.tsx`.
 
-### Bug reports
+## Hosting your own copy
 
-The **Report a problem** form (Help page, prototype banner and footer) saves reports to a `bug_reports` table in the same
-Supabase project. Run [`supabase/bug_reports.sql`](supabase/bug_reports.sql) once to create it; reports can be submitted from the
-site but only read in the Supabase dashboard (Table Editor → `bug_reports`). If the table is missing, the form offers a
-pre-filled GitHub issue instead.
+The site is static files with no server of its own.
 
-## For schools and parishes: hosting your own copy
+- **GitHub Pages** (what the live site uses): fork the repo, then under Settings → Pages choose **GitHub Actions**.
+  Every push to `main` runs the linter and tests, builds, and deploys (`.github/workflows/deploy.yml`).
+- **Any web host**: run `npm run build` and upload `dist/`. It uses relative paths, so any folder works.
 
-The site is a set of static files with no server of its own, so it can be hosted almost anywhere for free:
+To offer sync, use your own Supabase project (above) so your volunteers' encrypted data lives in an account you control.
 
-- **GitHub Pages** (what the live site uses): fork this repository, then under Settings → Pages choose "GitHub Actions". Every change to `main` redeploys automatically.
-- **Any web host**: run `npm run build` and upload the `dist/` folder.
+## Keeping it up to date
 
-Online backup is optional. To offer it, create your own free Supabase project (steps above) so your volunteers' encrypted backups live in an account you control. Without it, everything stays in each volunteer's browser.
+| When the diocese changes… | Edit |
+| --- | --- |
+| Checklist items, steps, links, renewal periods | `src/data/requirements.ts` |
+| A blank form or instruction sheet | Replace the file in `public/forms/` (same name) |
+| A form's layout | Field positions in `src/pdf/fill.ts`, then check a filled-in copy by eye |
+| Which details a form uses | `src/data/formFields.ts` |
 
-To update the checklist when the diocese revises it, edit `src/data/requirements.ts`.
+The Social Media and CPSL acknowledgments are re-typeset in `src/pdf/fill.ts` because the diocese's copies are
+low-quality scans; the originals are linked from those checklist items.
 
 ## Development
 
 ```sh
 npm install
 npm run dev      # local dev server
-npm run build    # static site in dist/
+npm test         # unit tests (dates, checklist data, encryption, PDF filling)
+npm run lint
+npm run build    # type-check and build the static site into dist/
 ```
 
-The built site is static and uses a relative base path, so `dist/` can be hosted anywhere (e.g. GitHub Pages).
+## Project layout
 
-## Files
-
-- `docs/`: the diocese's original PDFs as supplied.
-- `public/forms/`: copies the app serves (templates it fills in, plus instruction sheets for reference).
-- `src/data/requirements.ts`: the checklist content. Update it when the diocese revises the checklist.
-- `src/pdf/fill.ts`: PDF filling. Field positions are taken from the diocese's PDFs; the Social Media and CPSL acknowledgments are re-typeset because the originals are low-quality scans.
-
-## Hosting
-
-Pushes to `main` build and deploy to GitHub Pages (`.github/workflows/deploy.yml`). To enable Cloud backup on the hosted site,
-add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Secrets and variables → Actions → Variables.
+- `public/forms/`: the diocese's PDFs (blank forms it fills in, plus instruction sheets it links to)
+- `src/App.tsx`: page layout, tabs, checklist overview, Sync and Help pages
+- `src/components/`: checklist card, My info form, sync panel, bug report form
+- `src/data/`: checklist content and which fields each form uses
+- `src/pdf/fill.ts`: PDF filling, in the browser
+- `src/cloud/`: Supabase client, encryption, and the on-device key store
+- `supabase/`: SQL for the database tables and access rules

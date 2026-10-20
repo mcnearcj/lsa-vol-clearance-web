@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BugReport } from './components/BugReport'
-import { CloudPanel, type BackupStatus } from './components/CloudPanel'
+import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { allFormFields } from './data/formFields'
@@ -10,21 +10,21 @@ import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, type Progress, type Profile } from './types'
 
-type Tab = 'checklist' | 'info' | 'backup' | 'help'
+type Tab = 'checklist' | 'info' | 'sync' | 'help'
 
 const tabs: [Tab, string][] = [
   ['checklist', 'Checklist'],
   ['info', 'My info'],
-  ['backup', 'Sync'],
+  ['sync', 'Sync'],
   ['help', 'Help'],
 ]
 
-/** Email links from the sign-in service land with details in the hash; open the Backup tab for them. */
-const initialTab = (): Tab => (/(access_token|error_description|type=recovery)/.test(window.location.hash) ? 'backup' : 'checklist')
+/** Email links from the sign-in service land with details in the hash; open the Sync tab for them. */
+const initialTab = (): Tab => (/(access_token|error_description|type=recovery)/.test(window.location.hash) ? 'sync' : 'checklist')
 
 const asset = (file: string) => `${import.meta.env.BASE_URL}${file}`
 
-const backupDot: Partial<Record<BackupStatus, 'ok' | 'warn' | 'off'>> = {
+const syncDot: Partial<Record<SyncStatus, 'ok' | 'warn' | 'off'>> = {
   'signed-out': 'off',
   locked: 'warn',
   attention: 'warn',
@@ -34,7 +34,7 @@ const backupDot: Partial<Record<BackupStatus, 'ok' | 'warn' | 'off'>> = {
   manual: 'off',
 }
 
-const backupLabel: Record<BackupStatus, string> = {
+const syncLabel: Record<SyncStatus, string> = {
   unavailable: '',
   'signed-out': 'Not synced',
   locked: 'Sync paused: sign in again',
@@ -59,12 +59,12 @@ export default function App() {
   const [ui, setUi] = useStored('ui', { introDismissed: false })
   const [message, setMessage] = useState('')
   const [confirmErase, setConfirmErase] = useState(false)
-  const [backup, setBackup] = useState<BackupStatus>('unavailable')
-  const [backupAt, setBackupAt] = useState<string | null>(null)
+  const [sync, setSync] = useState<SyncStatus>('unavailable')
+  const [syncAt, setSyncAt] = useState<string | null>(null)
   const [resetToken, setResetToken] = useState(0)
-  const onBackupStatus = useCallback((s: BackupStatus, at: string | null) => {
-    setBackup(s)
-    setBackupAt(at)
+  const onSyncStatus = useCallback((s: SyncStatus, at: string | null) => {
+    setSync(s)
+    setSyncAt(at)
   }, [])
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -106,7 +106,7 @@ export default function App() {
   const infoFilled = allFormFields.filter((k) => String(profile[k]).trim()).length
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
 
-  const exportBackup = () => void saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
+  const exportBackup = () => saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
   const importBackup = async (file: File) => {
     try {
@@ -137,11 +137,11 @@ export default function App() {
           <p className="kicker">Diocese of Allentown · Safe Environment</p>
           <h1>Volunteer Clearances</h1>
         </div>
-        <nav className="tabs" role="tablist" aria-label="Sections">
+        <nav className="tabs" aria-label="Sections">
           {tabs.map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+            <button key={id} aria-current={tab === id ? 'page' : undefined} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
               {label}
-              {id === 'backup' && backupDot[backup] && <span className={`tab-dot ${backupDot[backup]}`} aria-label={backupLabel[backup]} />}
+              {id === 'sync' && syncDot[sync] && <span className={`tab-dot ${syncDot[sync]}`} aria-label={syncLabel[sync]} />}
             </button>
           ))}
         </nav>
@@ -177,13 +177,13 @@ export default function App() {
               <div className="bar" role="progressbar" aria-label="Checklist progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                 <div style={{ width: `${pct}%` }} />
               </div>
-              {backup !== 'unavailable' && (
-                <p className="backup-line">
-                  <span className={`dot ${backupDot[backup] ?? 'off'}`} aria-hidden />
-                  <span>{backup === 'saved' && backupAt ? `Synced ${timeOf(backupAt)}` : backupLabel[backup]}</span>
-                  {['signed-out', 'locked', 'attention', 'error', 'manual'].includes(backup) && (
-                    <button className="link" onClick={() => setTab('backup')}>
-                      {backup === 'signed-out' ? 'Set up sync' : backup === 'manual' ? 'Sync settings' : 'Fix this'}
+              {sync !== 'unavailable' && (
+                <p className="sync-status">
+                  <span className={`dot ${syncDot[sync] ?? 'off'}`} aria-hidden />
+                  <span>{sync === 'saved' && syncAt ? `Synced ${timeOf(syncAt)}` : syncLabel[sync]}</span>
+                  {['signed-out', 'locked', 'attention', 'error', 'manual'].includes(sync) && (
+                    <button className="link" onClick={() => setTab('sync')}>
+                      {sync === 'signed-out' ? 'Set up sync' : sync === 'manual' ? 'Sync settings' : 'Fix this'}
                     </button>
                   )}
                 </p>
@@ -205,11 +205,11 @@ export default function App() {
                       {infoFilled ? `My info (${infoFilled} of ${allFormFields.length} filled)` : 'Go to My info'}
                     </button>
                   </li>
-                  {backup !== 'unavailable' && (
+                  {sync !== 'unavailable' && (
                     <li>
                       <strong>Sign in to sync your progress.</strong> Use it on any device. Free, and only you can read it.{' '}
-                      {backup === 'signed-out' ? (
-                        <button className="link" onClick={() => setTab('backup')}>
+                      {sync === 'signed-out' ? (
+                        <button className="link" onClick={() => setTab('sync')}>
                           Set up sync
                         </button>
                       ) : (
@@ -286,7 +286,7 @@ export default function App() {
 
         {tab === 'info' && <ProfileForm profile={profile} onChange={setProfile} onDone={() => setTab('checklist')} />}
 
-        <div hidden={tab !== 'backup'}>
+        <div hidden={tab !== 'sync'}>
           <div className="page-intro">
             <h2>Sync</h2>
             <p>Sign in to keep your info and checklist in sync across your phone and computer, and safe if you clear your browser.</p>
@@ -296,7 +296,7 @@ export default function App() {
           <CloudPanel
             profile={profile}
             progress={progress}
-            onStatus={onBackupStatus}
+            onStatus={onSyncStatus}
             resetToken={resetToken}
             onRestore={(d) => {
               setProfile({ ...emptyProfile, ...d.profile })
@@ -326,7 +326,7 @@ export default function App() {
                 }}
               />
             </div>
-            {message && tab === 'backup' && (
+            {message && tab === 'sync' && (
               <p className="notice ok" role="status">
                 {message}
               </p>
@@ -383,7 +383,7 @@ export default function App() {
                   <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
                     GitHub
                   </a>
-                  , including how forms are filled in and how online backup is encrypted.
+                  , including how forms are filled in and how sync is encrypted.
                 </dd>
               </dl>
             </section>

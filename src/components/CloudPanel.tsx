@@ -7,9 +7,9 @@ import type { Profile, Progress } from '../types'
 
 // One password does two jobs, both worked out on this device:
 //  - a sign-in secret derived from it is what the sign-in service sees (never the password itself)
-//  - an encryption key derived from it (with a different, random salt) locks the backup before upload
-// So the server can't read backups, and a password reset gets you back in but can't open an old backup.
-// Once signed in, backup runs automatically unless the person opted out at their first sign-in on this device.
+//  - an encryption key derived from it (with a different, random salt) locks the synced copy before upload
+// So the server can't read synced copies, and a password reset gets you back in but can't open an old copy.
+// Once signed in, sync runs automatically unless the person opted out at their first sign-in on this device.
 
 interface Snapshot {
   v: 1
@@ -17,13 +17,13 @@ interface Snapshot {
   progress: Progress
 }
 
-export type BackupStatus = 'unavailable' | 'signed-out' | 'locked' | 'attention' | 'saving' | 'saved' | 'manual' | 'error'
+export type SyncStatus = 'unavailable' | 'signed-out' | 'locked' | 'attention' | 'saving' | 'saved' | 'manual' | 'error'
 
 interface Props {
   profile: Profile
   progress: Progress
   onRestore: (data: { profile: Profile; progress: Progress }) => void
-  onStatus?: (status: BackupStatus, savedAt: string | null) => void
+  onStatus?: (status: SyncStatus, savedAt: string | null) => void
   /** Changes when the person erases their data on this device; signs out so an empty device is never backed up. */
   resetToken?: number
 }
@@ -74,12 +74,12 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
   const [recovering, setRecovering] = useState(() => cloudConfigured && readAuthHash().recovery)
   const [user, setUser] = useState<{ id: string; email: string } | null>(null)
   const [vault, setVault] = useState<Vault | null>(null)
-  // A backup exists but this password can't open it (made before a password reset, or with the old separate passphrase).
+  // A synced copy exists but this password can't open it (it was saved before a password reset).
   const [stale, setStale] = useState(false)
-  // The backup and this device both have different info; the person chooses which to keep.
+  // The synced copy and this device both have different info; the person chooses which to keep.
   const [conflict, setConflict] = useState<Snapshot | null>(null)
   const [cloudTime, setCloudTime] = useState<string | null>(null)
-  // Automatic saving starts only once the backup and this device agree, so an empty device can't overwrite a good copy.
+  // Automatic saving starts only once the synced copy and this device agree, so an empty device can't overwrite a good copy.
   const [reconciled, setReconciled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [syncError, setSyncError] = useState(false)
@@ -128,7 +128,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     setSyncError(false)
   }, [])
 
-  /** Brings the backup and this device into agreement: save, restore, or ask. */
+  /** Brings the synced copy and this device into agreement: save, restore, or ask. */
   const reconcile = useCallback(
     async (v: Vault, auto: boolean) => {
       const row = await fetchRow()
@@ -205,33 +205,27 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Erasing this device's data signs out of backup here, so the empty device isn't saved over the backup.
+  // Erasing this device's data signs out of sync here, so the empty device is never saved over the synced copy.
   const firstReset = useRef(resetToken)
   useEffect(() => {
     if (resetToken === firstReset.current) return
     firstReset.current = resetToken
     void (async () => {
-      await keystore.clear()
       await forget()
       setUser(null)
+      await keystore.clear()
       setPref({ autoSync: true, decided: false })
       const c = await getClient().catch(() => null)
       await c?.auth.signOut()
     })()
   }, [resetToken, forget, setPref])
 
-  /** Signs in with the derived secret. Accounts made before the one-password change used the raw password; move them over. */
+  /** Signs in with the secret derived from the password; the password itself is never sent. */
   const signInWith = async (addr: string, pw: string) => {
     const c = await getClient()
-    const secret = await deriveAuthSecret(addr, pw)
-    const first = await c.auth.signInWithPassword({ email: addr, password: secret })
-    if (!first.error) return first.data.user
-    if (first.error.message !== 'Invalid login credentials') throw new Error(first.error.message)
-    const legacy = await c.auth.signInWithPassword({ email: addr, password: pw })
-    if (legacy.error) throw new Error(legacy.error.message === 'Invalid login credentials' ? WRONG : legacy.error.message)
-    const { error: upd } = await c.auth.updateUser({ password: secret })
-    if (upd) throw new Error(upd.message)
-    return legacy.data.user
+    const { data, error: err } = await c.auth.signInWithPassword({ email: addr, password: await deriveAuthSecret(addr, pw) })
+    if (err) throw new Error(err.message === 'Invalid login credentials' ? WRONG : err.message)
+    return data.user
   }
 
   /** Works out the encryption key from the password, remembers it on this device, then reconciles. */
@@ -244,7 +238,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
         await decryptJson<Snapshot>(key, row.iv, row.ciphertext)
         v = { key, salt: row.salt }
       } catch {
-        // Can't open the existing backup with this password; a new key will replace it on the next save.
+        // Can't open the existing copy with this password; a new key will replace it on the next save.
       }
     }
     if (!v) {
@@ -368,7 +362,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
       setMessage('Your synced copy was deleted and sync is off. Everything on this device is still here.')
     })
 
-  // Keep the backup current while automatic backup is on. Waits for a pause in edits.
+  // Keep the synced copy current while automatic sync is on. Waits for a pause in edits.
   useEffect(() => {
     if (!pref.autoSync || !vault || !reconciled || stale) return
     const t = setTimeout(() => {
@@ -380,8 +374,8 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     return () => clearTimeout(t)
   }, [pref.autoSync, vault, reconciled, stale, profile, progress, save])
 
-  // Tell the rest of the site how backup is doing, for the status shown under the header.
-  const status: BackupStatus = !cloudConfigured
+  // Tell the rest of the site how sync is doing, for the status shown under the header.
+  const status: SyncStatus = !cloudConfigured
     ? 'unavailable'
     : !user
       ? 'signed-out'
@@ -454,7 +448,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
         {passwordField('Type it again', 'cloud-new-password-2', password2, setPassword2, 'new-password')}
         <div className="row">
           <button className="primary" type="submit" disabled={busy}>
-            Save new password
+            {busy ? 'Saving…' : 'Save new password'}
           </button>
         </div>
       </>,
@@ -467,7 +461,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
         {passwordField('Password', 'cloud-password', password, setPassword, 'current-password')}
         <div className="row">
           <button className="primary" type="submit" disabled={busy || !password}>
-            Continue
+            {busy ? 'Signing in…' : 'Continue'}
           </button>
           <button type="button" className="ghost" onClick={() => void signOut()} disabled={busy}>
             Use a different account
@@ -525,7 +519,17 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
         )}
         <div className="row">
           <button className="primary" type="submit" disabled={busy}>
-            {mode === 'create' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
+            {busy
+              ? mode === 'create'
+                ? 'Creating account…'
+                : mode === 'forgot'
+                  ? 'Sending…'
+                  : 'Signing in…'
+              : mode === 'create'
+                ? 'Create account'
+                : mode === 'forgot'
+                  ? 'Send reset link'
+                  : 'Sign in'}
           </button>
           {mode === 'signin' && (
             <button type="button" className="ghost" onClick={() => setMode('forgot')}>
@@ -564,7 +568,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
   } else if (stale) {
     state = (
       <div className="choice" role="alert">
-        <p>You have an older synced copy that can’t be opened with this password (it was saved before a password reset or with the old separate passphrase).</p>
+        <p>You have an older synced copy that can’t be opened with this password, because it was saved before a password reset.</p>
         <div className="row">
           <button className="primary" onClick={() => void saveNow()} disabled={busy}>
             Replace it with this device’s info
@@ -596,7 +600,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     )
   }
 
-  const backupStep = (
+  const syncStep = (
     <div className="stack">
       {state}
       <label className="check">
@@ -648,7 +652,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
             </button>
           ),
         )}
-        {step(2, 'Sync', step1Done ? 'active' : 'todo', step1Done ? backupStep : null)}
+        {step(2, 'Sync', step1Done ? 'active' : 'todo', step1Done ? syncStep : null)}
       </ol>
 
       {message && (
