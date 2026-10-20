@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { missingFields } from '../data/formFields'
 import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
 import { saveFile } from '../save'
+import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
 import { personName, type ItemProgress, type Profile, type Requirement } from '../types'
 
 interface Props {
@@ -65,6 +66,7 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
   const [open, setOpen] = useState(defaultOpen)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [stale, setStale] = useState(false)
   const [missing, setMissing] = useState<string[] | null>(null)
   const detailsId = useId()
   const cur: ItemProgress = progress ?? { status: 'todo' }
@@ -90,7 +92,8 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
       saveFile(filename, bytes, 'application/pdf')
       if (cur.status === 'todo') onChange({ ...cur, status: 'started' })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The form could not be made. Try again.')
+      if (isStaleBuildError(e)) setStale(true)
+      else setError(e instanceof Error ? e.message : 'The form could not be made. Try again.')
     } finally {
       setBusy(false)
     }
@@ -176,6 +179,16 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
                   </button>
                   <button className="ghost" onClick={() => void download(true)}>
                     Download anyway
+                  </button>
+                </div>
+              </div>
+            )}
+            {stale && (
+              <div className="missing" role="alert">
+                <p>{STALE_MESSAGE}</p>
+                <div className="row">
+                  <button className="primary" onClick={() => window.location.reload()}>
+                    Reload page
                   </button>
                 </div>
               </div>

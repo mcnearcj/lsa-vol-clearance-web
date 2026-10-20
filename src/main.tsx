@@ -5,6 +5,9 @@ import '@fontsource-variable/public-sans'
 import '@fontsource-variable/source-serif-4'
 import './index.css'
 import App from './App.tsx'
+import { watchForStaleBuild } from './staleBuild'
+
+watchForStaleBuild()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

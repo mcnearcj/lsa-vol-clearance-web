@@ -8,6 +8,7 @@ import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
 import { standing, type Standing } from './dates'
 import { saveFile } from './save'
+import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, personName, type Progress, type Profile } from './types'
 
@@ -65,6 +66,12 @@ export default function App() {
   const [syncEmail, setSyncEmail] = useState<string | null>(null)
   const [confirmSwitch, setConfirmSwitch] = useState(false)
   const [cleared, setCleared] = useState(false)
+  const [stale, setStale] = useState(false)
+  useEffect(() => {
+    const onStale = () => setStale(true)
+    window.addEventListener(STALE_EVENT, onStale)
+    return () => window.removeEventListener(STALE_EVENT, onStale)
+  }, [])
   const [resetToken, setResetToken] = useState(0)
   const onSyncStatus = useCallback((s: SyncStatus, at: string | null, email: string | null) => {
     setSync(s)
@@ -166,6 +173,15 @@ export default function App() {
       </div>
 
       <main>
+        {stale && (
+          <div className="notice stale" role="alert">
+            <p>{STALE_MESSAGE}</p>
+            <button className="primary" onClick={() => window.location.reload()}>
+              Reload page
+            </button>
+          </div>
+        )}
+
         {cleared && !hasData && !syncEmail && (
           <p className="notice ok" role="status">
             This computer is cleared. No one’s info is loaded. Add your own under My info.

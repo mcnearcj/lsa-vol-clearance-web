@@ -373,3 +373,4 @@ address { font-style: normal; background: var(--surface-2); border-radius: 10px;
 .person-sub { color: var(--muted); }
 .switch { display: flex; flex-direction: column; gap: 10px; font-size: 0.93rem; }
 .who { color: var(--text); }
+.notice.stale { background: var(--warn-soft); display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
