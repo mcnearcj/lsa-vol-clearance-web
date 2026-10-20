@@ -38,6 +38,8 @@ type Mode = 'signin' | 'create' | 'forgot'
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const here = () => window.location.origin + window.location.pathname
 const WRONG = 'That email and password don’t match an account.'
+// Sign-in emails are sent by Supabase, the service that runs accounts for this site. Say so, so they aren't mistaken for spam.
+const SENDER = 'Supabase Auth (noreply@mail.app.supabase.io)'
 
 /** Supabase sends people back with details in the URL hash (after confirming email or resetting a password). */
 function readAuthHash(): { error?: string; recovery: boolean } {
@@ -261,7 +263,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
       if (mode === 'forgot') {
         const { error: err } = await c.auth.resetPasswordForEmail(addr, { redirectTo: here() })
         if (err) throw new Error(err.message)
-        setMessage('If that email has an account, a reset link is on its way. Open it on this device.')
+        setMessage(`If that email has an account, a reset link is on its way from ${SENDER}. Open it on this device. Check your spam folder if you don’t see it.`)
         return
       }
       if (password.length < 8) throw new Error('Your password needs at least 8 characters.')
@@ -276,7 +278,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
         })
         if (err) throw new Error(err.message)
         if (!data.session) {
-          setMessage(`Almost done. We sent a confirmation link to ${addr}. Open it on this device, then sign in here.`)
+          setMessage(`Almost done. Check ${addr} for a confirmation email from ${SENDER} and open the link on this device. Check your spam folder if you don’t see it in a few minutes.`)
           setMode('signin')
           setPassword('')
           setPassword2('')
@@ -509,6 +511,11 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
               <small> Recommended. You can turn this off later.</small>
             </span>
           </label>
+        )}
+        {mode === 'create' && (
+          <p className="small">
+            You’ll get a confirmation email from <strong>Supabase</strong>, the service this site uses to run accounts. It’s safe to open.
+          </p>
         )}
         {mode === 'create' && (
           <p className="callout">Keep your password somewhere safe. If you reset it later, your old synced copy can’t be opened, but everything on your device stays and syncs again.</p>

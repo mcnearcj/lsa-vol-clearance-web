@@ -373,6 +373,10 @@ export default function App() {
                 <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
+                <dt>Why did my sign-in email come from Supabase?</dt>
+                <dd>
+                  Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
+                </dd>
                 <dt>Who made this, and how does it work?</dt>
                 <dd>
                   It’s a free, open project. All of the code is public on{' '}
