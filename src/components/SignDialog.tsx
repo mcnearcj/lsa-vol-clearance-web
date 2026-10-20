@@ -4,7 +4,7 @@ import { fieldLabels, formFields } from '../data/formFields'
 import { site } from '../data/site'
 import { saveFile } from '../save'
 import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
-import { personName, type FormId, type Profile } from '../types'
+import { personName, ssnOnAuthorization, type FormId, type Profile } from '../types'
 
 // Sign every form at once, on screen. The signature and SSN live only in this dialog's memory for one download:
 // they're never saved on the device, synced, or sent anywhere.
@@ -272,8 +272,20 @@ export function SignDialog({ open, profile, onClose, onEditInfo, onSigned }: Pro
           )}
 
           <fieldset className="sign-section">
-            <legend>Social Security Number</legend>
-            <p className="small">Needed on the NSOR application. Leave it blank to write it in by hand later.</p>
+            <legend>Social Security Number (optional)</legend>
+            <p>
+              {ssnOnAuthorization(profile) ? (
+                <>
+                  Goes on <strong>two forms</strong>: the <strong>NSOR application</strong> (the state requires it) and the{' '}
+                  <strong>Background Check Authorization</strong>, which asks employees for it.
+                </>
+              ) : (
+                <>
+                  Goes on <strong>one form only</strong>: the <strong>NSOR application</strong>, where the state requires it. It isn’t put on any other form.
+                </>
+              )}
+            </p>
+            <p className="small">Leave it blank to write it on the printed form by hand.</p>
             <div className="ssn-row">
               <input
                 id="sign-ssn"

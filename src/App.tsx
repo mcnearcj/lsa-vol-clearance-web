@@ -487,7 +487,14 @@ export default function App() {
                 <dd>Everyone who may have contact with children needs all of them except the Motor Vehicle Report, which is only for people who drive for the parish or school. The FBI fingerprint check is for volunteers 18 and older.</dd>
                 <dt>How often do I renew?</dt>
                 <dd>Background checks and the Mandated Reporter training last 5 years. Mark an item done with the date you completed it and the site shows its renewal date. Protecting God’s Children is a one-time training.</dd>
-                <dt>How is my Social Security Number handled?</dt>
+                <dt>Which forms need my Social Security Number?</dt>
+                <dd>
+                  Of the forms this site fills in, only the <strong>NSOR application</strong> (the state requires it). The <strong>Background Check Authorization</strong> asks for it from employees only, so volunteers leave it blank. The acknowledgment forms don’t ask for it.
+                  <br />
+                  <br />
+                  Two of the state’s online systems also ask for it when you apply there: the <strong>Child Abuse History</strong> clearance (include it, or your results take longer) and <strong>PATCH</strong> (optional, but recommended).
+                </dd>
+                <dt>How is my Social Security Number handled here?</dt>
                 <dd>It’s only asked for in the “Sign all forms” window, and only to fill in that one download. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>

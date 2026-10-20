@@ -18,7 +18,7 @@ export const requirements: Requirement[] = [
     links: [{ label: 'Pennsylvania Access To Criminal History (PATCH)', href: 'https://epatch.pa.gov/' }],
     steps: [
       'Go to the PATCH site and click “New Volunteer Record Check” on the main page. Volunteer checks are free.',
-      'Fill in your information and submit the request.',
+      'Fill in your information and submit the request. It asks for your Social Security Number; it isn’t required, but it’s recommended.',
       'On the results screen, click the blue “Certification Form” link to open your official certificate. You’re not done until you open it. Print it or save it as a PDF.',
       'Give the printed certificate to your Local Safe Environment Coordinator (LSEC).',
       'Can’t do it online? Print the Background Check Authorization Form (Checklist #10, below) and email it to punger@allentowndiocese.org instead.',
@@ -46,7 +46,7 @@ export const requirements: Requirement[] = [
       'When asked what type of device you are using, choose “Public” (library/school) or “Private” (your own device).',
       'Set a permanent password and write it down. Log in again with it, accept the My Child Welfare Terms and Conditions, and click Continue.',
       'Click “Create a Clearance Application” → “Begin”. Parish employees choose “Individual 14 years or older applying for or holding a paid position…”; school employees (new hire or updating) choose “School employee governed by the public school code”. Volunteers choose the volunteer option shown on the page; a volunteer clearance cannot be used for employment.',
-      'Enter all requested information. Include an email so you can get your result electronically. List everyone you have lived with in the last 25 years, even if you have not lived with them recently, so the application is not sent back. (Applicants under 18 in 1975 must list their parents or guardians.)',
+      'Enter all requested information. Include your Social Security Number, or your results will take longer. Include an email so you can get your result electronically. List everyone you have lived with in the last 25 years, even if you have not lived with them recently, so the application is not sent back. (Applicants under 18 in 1975 must list their parents or guardians.)',
       'Enter your payment code when asked, then click “Submit” and write down the application number.',
       'You should receive an email that the application was received, then an email when your clearance is ready (about 2–3 weeks if you used a mailed copy). If you get a letter asking for more information, reply as it directs.',
     ],

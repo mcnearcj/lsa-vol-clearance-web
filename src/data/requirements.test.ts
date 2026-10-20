@@ -30,3 +30,12 @@ describe('missingFields', () => {
     expect(missingFields('sexabuse', { ...emptyProfile, firstName: 'A', lastName: 'B', siteName: 'St. Joseph', siteCity: 'Bethlehem' })).toEqual([])
   })
 })
+
+describe('ssnOnAuthorization', () => {
+  it('puts the SSN on the authorization form only for employees, never for volunteers or a blank role', async () => {
+    const { ssnOnAuthorization } = await import('../types')
+    expect(ssnOnAuthorization({ ...emptyProfile, position: 'Volunteer' })).toBe(false)
+    expect(ssnOnAuthorization({ ...emptyProfile, position: '' })).toBe(false)
+    expect(ssnOnAuthorization({ ...emptyProfile, position: 'Employee' })).toBe(true)
+  })
+})

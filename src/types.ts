@@ -80,5 +80,8 @@ export interface Requirement {
   references?: { label: string; file: string }[]
 }
 
+/** The Background Check Authorization asks only employees (any role other than volunteer) for an SSN. */
+export const ssnOnAuthorization = (p: Profile) => p.position !== '' && p.position !== 'Volunteer'
+
 /** The name to show for whose info is loaded, or '' if none has been entered. */
 export const personName = (p: Profile) => [p.firstName, p.lastName].map((s) => s.trim()).filter(Boolean).join(' ')

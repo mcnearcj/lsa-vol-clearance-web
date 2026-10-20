@@ -1,5 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
-import type { FormId, Profile } from '../types'
+import { ssnOnAuthorization, type FormId, type Profile } from '../types'
 
 // All filling happens in the browser. Nothing is uploaded anywhere.
 // Coordinates below are PDF points measured from the TOP-left of the page (converted when drawing),
@@ -129,7 +129,7 @@ async function fillBackgroundAuth(bytes: Uint8Array, p: Profile, sign?: Signing)
 
   if (sign) {
     // The form only asks employees for an SSN.
-    if (sign.ssn && p.position !== 'Volunteer') put(page, font, ssnFmt(sign.ssn), 400, 415, 160)
+    if (sign.ssn && ssnOnAuthorization(p)) put(page, font, ssnFmt(sign.ssn), 400, 415, 160)
     // One line runs across the bottom at 654 pt: signature on the left, date on the right.
     // Only ~22 pt of clear space between the consent paragraph and the line.
     await drawSignature(doc, page, sign.signature, { x: 80, top: 632, w: 260, h: 21 })
