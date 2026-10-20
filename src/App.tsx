@@ -439,7 +439,10 @@ export default function App() {
                 </dd>
                 <dt>I’m using a shared computer. Is that OK?</dt>
                 <dd>
-                  Yes, but your info is saved on this computer until you clear it. Check the name at the top of each page. When you’re done, sign in to Sync so your progress is saved, then choose “Not you?” or “Erase my data” below to clear this computer. If you see someone else’s name, choose “Not you?” to start fresh.
+                  Yes. The easiest way is a private window (called Incognito in Chrome, InPrivate in Edge, or Private Browsing in Safari and Firefox). Everything you enter is cleared when you close it, so sign in to Sync first if you want to keep your progress.
+                  <br />
+                  <br />
+                  In a normal window, your info stays on the computer until you clear it. Check the name at the top of each page, and when you’re done, choose “Not you?” or “Erase my data” below. If you see someone else’s name, choose “Not you?” to start fresh.
                 </dd>
                 <dt>Who made this, and how does it work?</dt>
                 <dd>
