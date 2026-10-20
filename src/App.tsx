@@ -176,7 +176,7 @@ export default function App() {
 
       <div className="prototype" role="note">
         <p>
-          <strong>Early prototype.</strong> This site may have bugs. Check each filled-in form before you sign it.{' '}
+          <strong>Early prototype.</strong> This site may have bugs. Check each filled-in form before you submit it.{' '}
           <button className="link" onClick={openReport}>
             Report a problem
           </button>
