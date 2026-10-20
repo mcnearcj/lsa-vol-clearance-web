@@ -69,7 +69,6 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
       <button className="card-head" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={detailsId}>
         <StatusIcon st={st} />
         <span className="card-title">
-          <span className="eyebrow">Checklist #{req.number}</span>
           <span className="title">{req.title}</span>
           <span className="summary">{req.summary}</span>
           {meta.length > 0 && <span className="meta">{meta.join(' · ')}</span>}
@@ -154,6 +153,8 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
             ))}
           </ul>
         )}
+
+        <p className="small">Item {req.number} on the diocese’s checklist.</p>
 
         <div className="card-foot">
           <label className="notes">

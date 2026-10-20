@@ -8,6 +8,8 @@ export const site = {
   checklistName: 'School Volunteer Requirements Checklist',
   checklistRevised: '7/31/2025',
   requirementsUrl: 'https://www.allentowndiocese.org/safe-environment-requirements-for-employees-volunteers',
+  /** Volunteers who aren't in a leadership role have a shorter list (rev. 3/17/2026). */
+  limitedChecklistUrl: 'https://adtoday.nyc3.digitaloceanspaces.com/Limited-Volunteer2026.pdf',
   /** The diocese's page of current Safe Environment policies and forms: the source for this site's documents. */
   policiesUrl: 'https://www.allentowndiocese.org/safe-environment-policies',
   /** Local Safe Environment Coordinator: hands out payment codes and collects finished paperwork. */

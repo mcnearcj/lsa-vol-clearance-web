@@ -321,6 +321,15 @@ export default function App() {
               </section>
             )}
 
+            <aside className="who-needs" aria-label="Which requirements apply to you">
+              <p>
+                <strong>Not sure what you need?</strong> School volunteers need everything below. The diocese also allows “limited” volunteers, whose duties are strictly limited and who aren’t in a leadership role, to do a shorter list: the forms, Protecting God’s Children, and the driver form if they drive. If you’re not sure which you are, ask {site.lsec.name} before you start.{' '}
+                <button className="link" onClick={() => setTab('help')}>
+                  More in Help
+                </button>
+              </p>
+            </aside>
+
             {allDone && (
               <section className="next all-done">
                 <h2>You’re all set</h2>
@@ -458,8 +467,24 @@ export default function App() {
             <section className="panel">
               <h3>Questions</h3>
               <dl className="faq">
-                <dt>Do I need to do all 12?</dt>
-                <dd>Everyone who may have contact with children needs all of them except the Motor Vehicle Report, which is only for people who drive for the parish or school. The FBI fingerprint check is for volunteers 18 and older.</dd>
+                <dt>Do I need to do everything on this list?</dt>
+                <dd>
+                  It depends on your role. The diocese’s{' '}
+                  <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
+                    {site.checklistName}
+                  </a>{' '}
+                  says all school volunteers need everything here, except the driver form, which is only for people who drive for the school. The FBI fingerprint check is for volunteers 18 and older.
+                  <br />
+                  <br />
+                  The diocese also has a{' '}
+                  <a href={site.limitedChecklistUrl} target="_blank" rel="noreferrer noopener">
+                    Limited Volunteer checklist
+                  </a>{' '}
+                  for volunteers whose duties are strictly limited and who don’t serve in a leadership role. They need only the four policy acknowledgments (Sexual Abuse, Code of Conduct, Social Media, CPSL), Protecting God’s Children, and the driver form if they drive: no background checks or Mandated Reporter training.
+                  <br />
+                  <br />
+                  <strong>If you’re not sure which applies to you, ask {site.lsec.name} ({site.lsec.email}) before you start.</strong> Your school decides who counts as a limited volunteer.
+                </dd>
                 <dt>How often do I renew?</dt>
                 <dd>Background checks and the Mandated Reporter training last 5 years. Mark an item done with the date you completed it and the site shows its renewal date. Protecting God’s Children is a one-time training.</dd>
                 <dt>Which forms need my Social Security Number?</dt>
