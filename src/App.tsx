@@ -273,13 +273,6 @@ export default function App() {
               </address>
             </section>
 
-            <section className="panel report">
-              <h3>To report suspected child abuse</h3>
-              <p>
-                If a child is in immediate danger, <strong>call 911</strong>. Otherwise call the PA ChildLine, 24 hours a day: <strong className="select">1-800-932-0313</strong>. Then follow the diocese’s CPSL policy (Checklist #9) to tell your pastor or principal.
-              </p>
-            </section>
-
             <section className="panel">
               <h3>Questions</h3>
               <dl className="faq">
@@ -291,6 +284,14 @@ export default function App() {
                 <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. Nothing is uploaded unless you turn on online backup, which scrambles your info with a passphrase only you know.</dd>
+                <dt>Who made this, and how does it work?</dt>
+                <dd>
+                  It’s a free, open project. All of the code is public on{' '}
+                  <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
+                    GitHub
+                  </a>
+                  , including how forms are filled in and how online backup is encrypted.
+                </dd>
               </dl>
             </section>
 
@@ -325,6 +326,11 @@ export default function App() {
 
       <footer className="foot">
         <p>Not an official Diocese of Allentown website. Requirements from the diocese’s checklist revised 2/14/2023.</p>
+        <p>
+          <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
+            See how this site is built on GitHub
+          </a>
+        </p>
       </footer>
     </div>
   )

@@ -1,4 +1,6 @@
-# Volunteer Clearance Tracker
+# Volunteer Clearances
+
+**Live site:** https://mcnearcj.github.io/lsa-vol-clearance-web/
 
 A small web app that helps Diocese of Allentown volunteers track the Safe Environment requirements on the
 [Parish & School Volunteer Requirements Checklist](docs/Background%20Check%20List%20Volunteer.pdf) and fill in the forms.
@@ -25,6 +27,17 @@ Setup:
 2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates one `vault` table with row-level security so each user can only touch their own row.
 3. In **Authentication → URL Configuration**, set the Site URL to wherever you host the site.
 4. Copy `.env.example` to `.env.local` and fill in the project URL and anon key (Project Settings → API), then `npm run build`.
+
+## For schools and parishes: hosting your own copy
+
+The site is a set of static files with no server of its own, so it can be hosted almost anywhere for free:
+
+- **GitHub Pages** (what the live site uses): fork this repository, then under Settings → Pages choose "GitHub Actions". Every change to `main` redeploys automatically.
+- **Any web host**: run `npm run build` and upload the `dist/` folder.
+
+Online backup is optional. To offer it, create your own free Supabase project (steps above) so your volunteers' encrypted backups live in an account you control. Without it, everything stays in each volunteer's browser.
+
+To update the checklist when the diocese revises it, edit `src/data/requirements.ts`.
 
 ## Development
 
