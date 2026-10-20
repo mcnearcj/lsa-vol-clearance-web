@@ -117,3 +117,8 @@ input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid va
   .badge { margin-left: 40px; }
   button.link { margin-left: 0; }
 }
+
+.cloud form.grid { margin-bottom: 8px; }
+.check { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0; font-size: .92rem; }
+.check input { margin-top: 4px; }
+button.link.inline { margin-left: 0; padding: 0; }

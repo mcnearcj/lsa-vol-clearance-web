@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { CloudPanel } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { requirements } from './data/requirements'
@@ -7,7 +8,7 @@ import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, type Progress, type Profile } from './types'
 
-type Tab = 'checklist' | 'info' | 'about'
+type Tab = 'checklist' | 'info' | 'cloud' | 'about'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('checklist')
@@ -54,6 +55,7 @@ export default function App() {
             [
               ['checklist', 'Checklist'],
               ['info', 'My info'],
+              ['cloud', 'Cloud backup'],
               ['about', 'About & privacy'],
             ] as const
           ).map(([id, label]) => (
@@ -101,6 +103,18 @@ export default function App() {
 
         {tab === 'info' && <ProfileForm profile={profile} onChange={setProfile} />}
 
+        {/* Stays mounted so an unlocked cloud session survives switching tabs. */}
+        <div hidden={tab !== 'cloud'}>
+          <CloudPanel
+            profile={profile}
+            progress={progress}
+            onRestore={(d) => {
+              setProfile({ ...emptyProfile, ...d.profile })
+              setProgress(d.progress ?? {})
+            }}
+          />
+        </div>
+
         {tab === 'about' && (
           <section className="about">
             <h2>How this works</h2>
@@ -109,7 +123,7 @@ export default function App() {
             </p>
             <h2>Your privacy</h2>
             <ul>
-              <li>Your information is saved only in this browser on this device. There is no account and no server storing it.</li>
+              <li>Your information is saved in this browser on this device. Nothing is sent anywhere unless you turn on Cloud backup, which uploads an encrypted copy only you can unlock.</li>
               <li>PDFs are filled in on your device. Nothing is uploaded.</li>
               <li>The site never asks for or stores your Social Security Number. Write it on the printed forms by hand where required.</li>
               <li>Clearing your browser data, or using another device, means starting over. Use the backup below to move your progress.</li>

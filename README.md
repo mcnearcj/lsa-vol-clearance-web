@@ -9,8 +9,22 @@ A small web app that helps Diocese of Allentown volunteers track the Safe Enviro
 
 ## Privacy
 
-Everything stays in the volunteer's browser (`localStorage`). There is no backend, and PDFs are filled in on the device.
+By default everything stays in the volunteer's browser (`localStorage`) and PDFs are filled in on the device.
 The app never asks for or stores a Social Security Number; those fields are left blank on the generated forms.
+
+### Optional cloud backup
+
+If you connect a [Supabase](https://supabase.com) project, a **Cloud backup** tab lets a volunteer sign in and keep a copy
+of their info and progress for use on another device. The data is encrypted in the browser (PBKDF2 + AES-GCM) with a
+passphrase only the volunteer knows before upload, so the database holds ciphertext only. A forgotten passphrase cannot be
+recovered. Without the two environment variables below, the tab simply explains that backup is not turned on.
+
+Setup:
+
+1. Create a free Supabase project.
+2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates one `vault` table with row-level security so each user can only touch their own row.
+3. In **Authentication → URL Configuration**, set the Site URL to wherever you host the site.
+4. Copy `.env.example` to `.env.local` and fill in the project URL and anon key (Project Settings → API), then `npm run build`.
 
 ## Development
 
