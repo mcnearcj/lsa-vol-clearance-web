@@ -11,6 +11,8 @@ interface Props {
   profile: Profile
   onChange: (p: ItemProgress) => void
   onEditInfo: () => void
+  /** Opens on-screen signing for all forms at once. */
+  onSignAll?: () => void
   defaultOpen?: boolean
 }
 
@@ -62,7 +64,7 @@ export function StatusIcon({ st }: { st: Standing }) {
   }
 }
 
-export function RequirementCard({ req, progress, profile, onChange, onEditInfo, defaultOpen = false }: Props) {
+export function RequirementCard({ req, progress, profile, onChange, onEditInfo, onSignAll, defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -165,9 +167,16 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
                 Print it, then sign and date it by hand.
               </p>
             </div>
-            <button className="primary" onClick={() => void download()} disabled={busy}>
-              {busy ? 'Making your form…' : 'Download filled-in form'}
-            </button>
+            <div className="row">
+              <button className="primary" onClick={() => void download()} disabled={busy}>
+                {busy ? 'Making your form…' : 'Download filled-in form'}
+              </button>
+              {onSignAll && (
+                <button className="ghost" onClick={onSignAll}>
+                  Or sign all forms on screen
+                </button>
+              )}
+            </div>
             {missing && (
               <div className="missing" role="alert">
                 <p>

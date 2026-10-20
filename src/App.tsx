@@ -3,6 +3,7 @@ import { BugReport } from './components/BugReport'
 import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
+import { SignDialog } from './components/SignDialog'
 import { allFormFields } from './data/formFields'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
@@ -10,7 +11,7 @@ import { standing, type Standing } from './dates'
 import { saveFile } from './save'
 import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
-import { emptyProfile, personName, type Progress, type Profile } from './types'
+import { emptyProfile, personName, type FormId, type Progress, type Profile } from './types'
 
 type Tab = 'checklist' | 'info' | 'sync' | 'help'
 
@@ -68,6 +69,7 @@ export default function App() {
   const [cleared, setCleared] = useState(false)
   const [stale, setStale] = useState(false)
   const [remoteNote, setRemoteNote] = useState(false)
+  const [signOpen, setSignOpen] = useState(false)
   const onRemoteUpdate = useCallback(() => setRemoteNote(true), [])
   useEffect(() => {
     if (!remoteNote) return
@@ -126,6 +128,15 @@ export default function App() {
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
   const who = personName(profile)
   const hasData = Boolean(who) || Object.keys(progress).length > 0
+
+  // After signing on screen, every requirement with one of those forms counts as started (it still has to be handed in).
+  const markSigned = (forms: FormId[]) => {
+    const next = { ...progress }
+    for (const r of orderedRequirements) {
+      if (r.form && forms.includes(r.form.id) && (next[r.id]?.status ?? 'todo') === 'todo') next[r.id] = { ...next[r.id], status: 'started' }
+    }
+    setProgress(next)
+  }
 
   const exportBackup = () => saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
@@ -305,7 +316,11 @@ export default function App() {
                     <strong>Start the background checks early.</strong> Some take 2–3 weeks to come back.
                   </li>
                   <li>
-                    <strong>Download, print and sign the forms.</strong> Each one is filled in for you.
+                    <strong>Sign the forms.</strong> Each one is filled in for you. Print and sign on paper, or{' '}
+                    <button className="link" onClick={() => setSignOpen(true)}>
+                      sign them all on screen
+                    </button>
+                    .
                   </li>
                   <li>
                     <strong>Give everything to {site.lsec.name},</strong> {site.schoolName}’s Local Safe Environment Coordinator (LSEC).
@@ -331,6 +346,7 @@ export default function App() {
                       profile={profile}
                       onChange={(p) => setProgress({ ...progress, [nextUp.id]: p })}
                       onEditInfo={() => setTab('info')}
+                      onSignAll={() => setSignOpen(true)}
                       defaultOpen
                     />
                   </ul>
@@ -350,6 +366,17 @@ export default function App() {
                     </span>
                   </div>
                   <p className="group-intro">{g.intro}</p>
+                  {g.id === 'sign' && (
+                    <div className="sign-all">
+                      <div>
+                        <strong>Sign all six forms on screen</strong>
+                        <p>Draw or type your signature once. Every form is filled in, signed and dated, and downloaded as one PDF.</p>
+                      </div>
+                      <button className="primary" onClick={() => setSignOpen(true)}>
+                        Sign all forms
+                      </button>
+                    </div>
+                  )}
                   <ul className="cards">
                     {items.map((r) => (
                       <RequirementCard
@@ -359,6 +386,7 @@ export default function App() {
                         profile={profile}
                         onChange={(p) => setProgress({ ...progress, [r.id]: p })}
                         onEditInfo={() => setTab('info')}
+                        onSignAll={() => setSignOpen(true)}
                       />
                     ))}
                   </ul>
@@ -459,8 +487,8 @@ export default function App() {
                 <dd>Everyone who may have contact with children needs all of them except the Motor Vehicle Report, which is only for people who drive for the parish or school. The FBI fingerprint check is for volunteers 18 and older.</dd>
                 <dt>How often do I renew?</dt>
                 <dd>Background checks and the Mandated Reporter training last 5 years. Mark an item done with the date you completed it and the site shows its renewal date. Protecting God’s Children is a one-time training.</dd>
-                <dt>Why isn’t my Social Security Number on the forms?</dt>
-                <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
+                <dt>How is my Social Security Number handled?</dt>
+                <dd>It’s only asked for in the “Sign all forms” window, and only to fill in that one download. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
                 <dt>Why did my sign-in email come from Supabase?</dt>
@@ -519,6 +547,8 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <SignDialog open={signOpen} profile={profile} onClose={() => setSignOpen(false)} onEditInfo={() => setTab('info')} onSigned={markSigned} />
 
       <footer className="foot">
         <p>Not an official Diocese of Allentown website. Requirements from the diocese’s checklist revised 2/14/2023.</p>

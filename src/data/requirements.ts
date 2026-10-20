@@ -194,7 +194,7 @@ export const requirements: Requirement[] = [
     title: 'Signed Background Check Authorization Form',
     summary: 'Gives the diocese permission to run your background checks.',
     time: 'A few minutes',
-    note: 'Social Security Number is for employees only and is never entered or stored by this site.',
+    note: 'Social Security Number is for employees only. This site never stores it.',
     links: [],
     steps: [
       'Generate the form below. Your personal information is filled in.',
@@ -225,7 +225,7 @@ export const requirements: Requirement[] = [
     summary: 'Mail or email a one-page application to the state. Free. Must be less than a year old when you hand it in.',
     time: 'Processing takes about 14 days',
     validYears: 5,
-    note: 'Social Security Number is left blank on the generated form. Write it in by hand; this site never stores it.',
+    note: 'The single-form download leaves the Social Security Number blank to write in by hand. “Sign all forms” can fill it in for you; it’s never stored.',
     links: [
       {
         label: 'PA DHS NSOR application (original)',
@@ -234,7 +234,7 @@ export const requirements: Requirement[] = [
     ],
     steps: [
       'Generate the form below. Your information is filled in and the “Volunteer” purpose box is checked.',
-      'Print it and fill in your Social Security Number by hand. Sign and date it.',
+      'Print it, fill in your Social Security Number, and sign and date it. Or use “Sign all forms” to do all three on screen.',
       'Submit it one of three ways: mail to Clearance Verification Unit, ChildLine, Department of Human Services, PO Box 8170, Harrisburg, PA 17105-8170; or scan and email to RA-PWNSOR@pa.gov (subject: “NSOR Verification Applicant Last Name”); or hand deliver to the drop box at 2525 North 7th Street, Harrisburg, PA 17110.',
       'Keep a copy as proof of submission. Questions: Clearance Verification Unit, 877-371-5422.',
     ],

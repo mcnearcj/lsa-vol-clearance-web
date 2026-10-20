@@ -15,13 +15,17 @@ It is a volunteer-made helper, not an official diocesan site.
 - **Forms**: the Background Check Authorization, the Sexual Abuse, Code of Conduct, Social Media and CPSL
   acknowledgments, and the NSOR application download as filled-in PDFs to print and sign by hand. The site warns about
   any details that would be left blank.
+- **Sign all forms**: draw a signature (mouse, finger, or a stylus such as Apple Pencil, with pen pressure) or type it in a
+  handwriting font, optionally enter an SSN, and download all six forms signed, dated and combined into one PDF. The
+  signature and SSN exist only in memory for that one download; they're never saved, synced or sent.
 - **Sync** (optional): sign in to keep info and progress in step across devices, end-to-end encrypted.
 - **Help**: who to ask, FAQ, a "Report a problem" form, and erasing data from the device.
 
 ## Privacy
 
 - Everything is stored in the volunteer's own browser (`localStorage`). PDFs are filled in on the device.
-- The site never asks for a Social Security Number; those boxes stay blank to be written by hand.
+- The SSN is only asked for in the signing window, used for that one download, and never saved or synced. Otherwise
+  those boxes stay blank to be written by hand.
 - Fonts and all other assets are served with the site, so a page view contacts no third parties.
 - **Sync** encrypts on the device before upload. The password is stretched with PBKDF2 into two unrelated values: a
   sign-in secret (the only thing Supabase sees) and an AES-GCM key that encrypts the data. The database holds ciphertext

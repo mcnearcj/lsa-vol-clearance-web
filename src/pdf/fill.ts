@@ -7,6 +7,19 @@ import type { FormId, Profile } from '../types'
 
 export type LoadBytes = (file: string) => Promise<Uint8Array>
 
+/**
+ * Optional on-screen signing. Neither the signature nor the SSN is ever stored: they're passed in for one download
+ * and drawn straight onto the PDFs.
+ */
+export interface Signing {
+  /** PNG of the signature, transparent background. */
+  signature: Uint8Array
+  /** Date to write next to the signature, MM/DD/YYYY. */
+  date: string
+  /** Social Security Number, digits only. Used on the NSOR application (and the authorization form for employees). */
+  ssn?: string
+}
+
 const INK = rgb(0.05, 0.1, 0.45)
 
 /** Standard PDF fonts only handle Latin-1; swap anything else for "?" rather than crash. */
@@ -48,6 +61,20 @@ function check(page: PDFPage, font: PDFFont, cx: number, cy: number) {
   page.drawText('X', { x: cx - w / 2, y: page.getHeight() - cy - s * 0.35, size: s, font, color: INK })
 }
 
+/** Draws the signature inside a box (top-left corner, from the top of the page), sitting on the line at the bottom. */
+async function drawSignature(doc: PDFDocument, page: PDFPage, png: Uint8Array, box: { x: number; top: number; w: number; h: number }) {
+  const img = await doc.embedPng(png)
+  const scale = Math.min(box.w / img.width, box.h / img.height)
+  const w = img.width * scale
+  const h = img.height * scale
+  page.drawImage(img, { x: box.x, y: page.getHeight() - box.top - box.h, width: w, height: h })
+}
+
+export function ssnFmt(digits: string): string {
+  const d = digits.replace(/\D/g, '')
+  return d.length === 9 ? `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}` : d
+}
+
 function dobParts(iso: string): { mm: string; dd: string; yyyy: string } {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
   return m ? { yyyy: m[1], mm: m[2], dd: m[3] } : { mm: '', dd: '', yyyy: '' }
@@ -58,7 +85,7 @@ function phoneFmt(raw: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : raw
 }
 
-async function fillBackgroundAuth(bytes: Uint8Array, p: Profile): Promise<Uint8Array> {
+async function fillBackgroundAuth(bytes: Uint8Array, p: Profile, sign?: Signing): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes)
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const page = doc.getPage(0)
@@ -100,23 +127,37 @@ async function fillBackgroundAuth(bytes: Uint8Array, p: Profile): Promise<Uint8A
   put(page, font, p.siteName, 165, 546, 260)
   put(page, font, p.siteCity, 431, 546, 134)
 
+  if (sign) {
+    // The form only asks employees for an SSN.
+    if (sign.ssn && p.position !== 'Volunteer') put(page, font, ssnFmt(sign.ssn), 400, 415, 160)
+    // One line runs across the bottom at 654 pt: signature on the left, date on the right.
+    // Only ~22 pt of clear space between the consent paragraph and the line.
+    await drawSignature(doc, page, sign.signature, { x: 80, top: 632, w: 260, h: 21 })
+    put(page, font, sign.date, 420, 650, 140, 11)
+  }
+
   return doc.save()
 }
 
 async function fillAcknowledgment(
   bytes: Uint8Array,
   p: Profile,
-  y: { nameBaseline: number; locationBaseline: number },
+  y: { nameBaseline: number; locationBaseline: number; signBaseline: number },
+  sign?: Signing,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes)
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const page = doc.getPage(0)
   put(page, font, fullName(p), 292, y.nameBaseline, 245, 11)
   put(page, font, location(p), 76, y.locationBaseline, 172, 11)
+  if (sign) {
+    put(page, font, sign.date, 76, y.signBaseline, 172, 11)
+    await drawSignature(doc, page, sign.signature, { x: 292, top: y.signBaseline - 34, w: 240, h: 34 })
+  }
   return doc.save()
 }
 
-async function fillNsor(bytes: Uint8Array, p: Profile): Promise<Uint8Array> {
+async function fillNsor(bytes: Uint8Array, p: Profile, sign?: Signing): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes)
   const form = doc.getForm()
   const text = (name: string, value: string) => {
@@ -136,7 +177,17 @@ async function fillNsor(bytes: Uint8Array, p: Profile): Promise<Uint8Array> {
   text('Email Address', p.email)
   form.getCheckBox('Volunteer of a childcare provider groupdaycare home or family child care home').check()
 
+  if (sign) {
+    if (sign.ssn) text('Social Security Number XXXXXXXXX 1', ssnFmt(sign.ssn)) // the SSN row
+    text('Date', sign.date)
+    // Signature box: x 98, y 35, 225 x 22 (from the bottom of the page).
+    const page = doc.getPage(0)
+    await drawSignature(doc, page, sign.signature, { x: 100, top: page.getHeight() - 35 - 24, w: 220, h: 24 })
+  }
+
   form.updateFieldAppearances(await doc.embedFont(StandardFonts.Helvetica))
+  // A signed copy is final: flatten so the answers can't be edited (and survive combining into one file).
+  if (sign) form.flatten()
   return doc.save()
 }
 
@@ -161,7 +212,8 @@ function wrap(font: PDFFont, text: string, size: number, maxWidth: number): stri
 
 async function typesetAcknowledgment(
   p: Profile,
-  opts: { subtitle: string[]; paragraphs: string[]; attribution: string },
+  opts: { subtitle: string[]; paragraphs: string[] },
+  sign?: Signing,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const page = doc.addPage(LETTER)
@@ -215,20 +267,21 @@ async function typesetAcknowledgment(
   }
   const colB = 288
   const wideB = W - 72 - colB
-  line('Date', left, 180, y)
+  line('Date', left, 180, y, sign?.date)
   line('Signature of Clergy/Religious/Employee/Volunteer', colB, wideB, y)
+  if (sign) await drawSignature(doc, page, sign.signature, { x: colB + 4, top: y - 34, w: wideB - 8, h: 32 })
   y += 52
   line('Diocesan Location', left, 180, y, location(p))
   line('Printed Name', colB, wideB, y, fullName(p))
 
-  page.drawText(clean(opts.attribution), { x: left, y: 40, size: 8, font: sans, color: rgb(0.4, 0.4, 0.4) })
+  const note = sign ? `${SIGNED_NOTE} Signed on screen ${sign.date}.` : `${SIGNED_NOTE} Sign and date by hand. Use the diocese’s original if your location requires it.`
+  page.drawText(clean(note), { x: left, y: 40, size: 8, font: sans, color: rgb(0.4, 0.4, 0.4) })
   return doc.save()
 }
 
-const ATTRIBUTION =
-  'Re-typeset from the Diocese of Allentown form for legibility. Sign and date by hand. Use the diocese’s original if your location requires it.'
+const SIGNED_NOTE = 'Re-typeset from the Diocese of Allentown form for legibility.'
 
-function fillSocial(p: Profile) {
+function fillSocial(p: Profile, sign?: Signing) {
   return typesetAcknowledgment(p, {
     subtitle: ['SOCIAL MEDIA and ELECTRONIC COMMUNICATIONS POLICIES', 'ACKNOWLEDGMENT and CONSENT FORM'],
     paragraphs: [
@@ -238,11 +291,10 @@ function fillSocial(p: Profile) {
       '2)  I agree to abide by the Policies, as they may be updated from time to time.',
       '3)  I understand that any violation of the Policies may result in disciplinary action, including termination of employment or removal from ministry or other service.',
     ],
-    attribution: ATTRIBUTION,
-  })
+  }, sign)
 }
 
-function fillCpsl(p: Profile) {
+function fillCpsl(p: Profile, sign?: Signing) {
   return typesetAcknowledgment(p, {
     subtitle: ['DIOCESE OF ALLENTOWN', 'CHILD PROTECTIVE SERVICES LAW POLICY', 'ACKNOWLEDGMENT FORM'],
     paragraphs: [
@@ -250,31 +302,49 @@ function fillCpsl(p: Profile) {
       'I have reviewed the Child Protective Services Law Policy and understand its contents, and the process that I must complete if I have reasonable cause to suspect that a child has been subjected to child abuse or acts of child abuse.',
       'I further understand that the Diocese of Allentown has issued the Child Protective Services Law Policy for informational and guidance purposes only and that the Diocese does not intend for the policy to create a contract or any type of binding obligation on the Diocese. The Diocese of Allentown may periodically review the Child Protective Services Law Policy, and it reserves the right to amend or interpret the policy as it deems appropriate in its sole discretion. A copy of this acknowledgment form shall be placed in my personnel or volunteer file.',
     ],
-    attribution: ATTRIBUTION,
-  })
+  }, sign)
 }
 
-export async function fillForm(id: FormId, p: Profile, load: LoadBytes): Promise<{ bytes: Uint8Array; filename: string }> {
+const fileStem = (p: Profile) => {
   const who = [p.lastName, p.firstName].map((s) => s.trim().replace(/[^A-Za-z0-9]+/g, '-')).filter(Boolean).join('-')
-  const suffix = who ? `-${who}` : ''
+  return who ? `-${who}` : ''
+}
+
+export async function fillForm(id: FormId, p: Profile, load: LoadBytes, sign?: Signing): Promise<{ bytes: Uint8Array; filename: string }> {
+  const suffix = fileStem(p)
   switch (id) {
     case 'bgauth':
-      return { bytes: await fillBackgroundAuth(await load('forms/background-check-authorization.pdf'), p), filename: `background-check-authorization${suffix}.pdf` }
+      return { bytes: await fillBackgroundAuth(await load('forms/background-check-authorization.pdf'), p, sign), filename: `background-check-authorization${suffix}.pdf` }
     case 'sexabuse':
       return {
-        bytes: await fillAcknowledgment(await load('forms/sexual-abuse-acknowledgement.pdf'), p, { nameBaseline: 442, locationBaseline: 442 }),
+        bytes: await fillAcknowledgment(await load('forms/sexual-abuse-acknowledgement.pdf'), p, { nameBaseline: 442, locationBaseline: 442, signBaseline: 373 }, sign),
         filename: `sexual-abuse-acknowledgment${suffix}.pdf`,
       }
     case 'conduct':
       return {
-        bytes: await fillAcknowledgment(await load('forms/code-of-conduct-acknowledgement.pdf'), p, { nameBaseline: 456, locationBaseline: 456 }),
+        bytes: await fillAcknowledgment(await load('forms/code-of-conduct-acknowledgement.pdf'), p, { nameBaseline: 456, locationBaseline: 456, signBaseline: 373 }, sign),
         filename: `code-of-conduct-acknowledgment${suffix}.pdf`,
       }
     case 'social':
-      return { bytes: await fillSocial(p), filename: `social-media-acknowledgment${suffix}.pdf` }
+      return { bytes: await fillSocial(p, sign), filename: `social-media-acknowledgment${suffix}.pdf` }
     case 'cpsl':
-      return { bytes: await fillCpsl(p), filename: `cpsl-acknowledgment${suffix}.pdf` }
+      return { bytes: await fillCpsl(p, sign), filename: `cpsl-acknowledgment${suffix}.pdf` }
     case 'nsor':
-      return { bytes: await fillNsor(await load('forms/nsor-application.pdf'), p), filename: `nsor-application${suffix}.pdf` }
+      return { bytes: await fillNsor(await load('forms/nsor-application.pdf'), p, sign), filename: `nsor-application${suffix}.pdf` }
   }
+}
+
+/** The forms in the order the diocese's checklist lists them. */
+export const ALL_FORMS: FormId[] = ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth', 'nsor']
+
+/** Fills (and, with `sign`, signs and dates) every form, combined into one PDF. */
+export async function fillAll(p: Profile, load: LoadBytes, sign?: Signing): Promise<{ bytes: Uint8Array; filename: string }> {
+  const out = await PDFDocument.create()
+  out.setTitle(`Volunteer clearance forms - ${fullName(p) || 'volunteer'}`)
+  for (const id of ALL_FORMS) {
+    const filled = await PDFDocument.load((await fillForm(id, p, load, sign)).bytes)
+    const pages = await out.copyPages(filled, filled.getPageIndices())
+    pages.forEach((pg) => out.addPage(pg))
+  }
+  return { bytes: await out.save(), filename: `volunteer-forms${sign ? '-signed' : ''}${fileStem(p)}.pdf` }
 }
