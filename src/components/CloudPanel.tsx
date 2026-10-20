@@ -78,7 +78,7 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
     run(async () => {
       const c = await getClient()
       if (create) {
-        const { data, error: err } = await c.auth.signUp({ email, password })
+        const { data, error: err } = await c.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } })
         if (err) throw new Error(err.message)
         if (!data.session) {
           setMessage('Check your email to confirm your account, then sign in.')
