@@ -145,6 +145,20 @@ main > div { display: flex; flex-direction: column; gap: 16px; }
 .foot p { font-size: 0.8rem; color: var(--muted); }
 .foot p:first-child { border-top: 1px solid var(--line); padding-top: 14px; }
 
+/* Prototype notice: a full-width band under the masthead. */
+.prototype { background: var(--warn-soft); border-bottom: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.prototype p {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  font-size: 0.9rem;
+}
+.prototype strong { color: var(--warn); }
+.foot .link { font-weight: 500; }
+#report { scroll-margin-top: 16px; }
+
 /* ---------- Buttons & inputs ---------- */
 button { font: inherit; cursor: pointer; }
 .primary, .secondary, .ghost, .danger {

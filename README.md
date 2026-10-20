@@ -28,6 +28,13 @@ Setup:
 3. In **Authentication → URL Configuration**, set the Site URL to wherever you host the site.
 4. Copy `.env.example` to `.env.local` and fill in the project URL and anon key (Project Settings → API), then `npm run build`.
 
+### Bug reports
+
+The **Report a problem** form (Help page, prototype banner and footer) saves reports to a `bug_reports` table in the same
+Supabase project. Run [`supabase/bug_reports.sql`](supabase/bug_reports.sql) once to create it; reports can be submitted from the
+site but only read in the Supabase dashboard (Table Editor → `bug_reports`). If the table is missing, the form offers a
+pre-filled GitHub issue instead.
+
 ## For schools and parishes: hosting your own copy
 
 The site is a set of static files with no server of its own, so it can be hosted almost anywhere for free:

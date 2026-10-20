@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { BugReport } from './components/BugReport'
 import { CloudPanel } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
@@ -32,10 +33,28 @@ export default function App() {
   const [confirmErase, setConfirmErase] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Where the person was when they chose "Report a problem", attached to the report.
+  const [reportFrom, setReportFrom] = useState<string>('help')
+  const [scrollToReport, setScrollToReport] = useState(false)
+
   const setTab = (t: Tab) => {
     setTabState(t)
     window.scrollTo({ top: 0 })
   }
+
+  const openReport = () => {
+    setReportFrom(tab)
+    setTabState('help')
+    setScrollToReport(true)
+  }
+
+  useEffect(() => {
+    if (!scrollToReport || tab !== 'help') return
+    const el = document.getElementById('report')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    el?.querySelector('textarea')?.focus({ preventScroll: true })
+    setScrollToReport(false) // eslint-disable-line react-hooks/set-state-in-effect
+  }, [scrollToReport, tab])
 
   const st = (id: string) => standing(orderedRequirements.find((r) => r.id === id)!, progress[id]).standing
   const counted = orderedRequirements.filter((r) => st(r.id) !== 'na')
@@ -90,6 +109,15 @@ export default function App() {
           ))}
         </nav>
       </header>
+
+      <div className="prototype" role="note">
+        <p>
+          <strong>Early prototype.</strong> This site may have bugs. Check each filled-in form before you sign it.{' '}
+          <button className="link" onClick={openReport}>
+            Report a problem
+          </button>
+        </p>
+      </div>
 
       <main>
         {tab === 'checklist' && (
@@ -295,6 +323,12 @@ export default function App() {
               </dl>
             </section>
 
+            <section className="panel" id="report" aria-labelledby="report-h">
+              <h3 id="report-h">Report a problem</h3>
+              <p>This is an early prototype. If something looks wrong, like a form filled in the wrong place, a confusing step or a broken button, please tell us.</p>
+              <BugReport page={reportFrom} />
+            </section>
+
             <section className="panel">
               <h3>Erase my data</h3>
               <p>Removes your info and checklist from this browser. It doesn’t delete an online backup; do that on the Backup page.</p>
@@ -327,6 +361,10 @@ export default function App() {
       <footer className="foot">
         <p>Not an official Diocese of Allentown website. Requirements from the diocese’s checklist revised 2/14/2023.</p>
         <p>
+          <button className="link" onClick={openReport}>
+            Report a problem
+          </button>
+          {' · '}
           <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
             See how this site is built on GitHub
           </a>
