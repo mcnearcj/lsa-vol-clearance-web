@@ -86,6 +86,9 @@ in `src/components/CloudPanel.tsx` and the Help page FAQ in `src/App.tsx`.
 3. To offer sync, set up your own Supabase project (above) so your volunteers' encrypted data lives in an account you
    control.
 
+[DEPLOYING.md](DEPLOYING.md) has the details: hosting on another web server or a custom domain (such as a
+lsabear.com subdomain), server and cache settings, Supabase changes, and moving volunteers to a new address.
+
 ## Keeping it up to date
 
 The sources are the diocese's [Safe Environment Requirements](https://www.allentowndiocese.org/safe-environment-requirements-for-employees-volunteers)
