@@ -42,3 +42,8 @@ The built site is static and uses a relative base path, so `dist/` can be hosted
 - `public/forms/`: copies the app serves (templates it fills in, plus instruction sheets for reference).
 - `src/data/requirements.ts`: the checklist content. Update it when the diocese revises the checklist.
 - `src/pdf/fill.ts`: PDF filling. Field positions are taken from the diocese's PDFs; the Social Media and CPSL acknowledgments are re-typeset because the originals are low-quality scans.
+
+## Hosting
+
+Pushes to `main` build and deploy to GitHub Pages (`.github/workflows/deploy.yml`). To enable Cloud backup on the hosted site,
+add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under Settings → Secrets and variables → Actions → Variables.
