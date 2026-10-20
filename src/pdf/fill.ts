@@ -139,20 +139,49 @@ async function fillBackgroundAuth(bytes: Uint8Array, p: Profile, sign?: Signing)
   return doc.save()
 }
 
+/**
+ * The diocese's acknowledgment pages (revised 1/31/2024): Date and Signature share a row, then full-width
+ * Location and Printed Name lines. Baselines are measured from the top of the page.
+ */
 async function fillAcknowledgment(
   bytes: Uint8Array,
   p: Profile,
-  y: { nameBaseline: number; locationBaseline: number; signBaseline: number },
+  y: { signBaseline: number; locationBaseline: number; nameBaseline: number },
   sign?: Signing,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes)
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const page = doc.getPage(0)
-  put(page, font, fullName(p), 292, y.nameBaseline, 245, 11)
-  put(page, font, location(p), 76, y.locationBaseline, 172, 11)
+  put(page, font, location(p), 76, y.locationBaseline, 285, 11)
+  put(page, font, fullName(p), 76, y.nameBaseline, 292, 11)
   if (sign) {
-    put(page, font, sign.date, 76, y.signBaseline, 172, 11)
-    await drawSignature(doc, page, sign.signature, { x: 292, top: y.signBaseline - 34, w: 240, h: 34 })
+    put(page, font, sign.date, 76, y.signBaseline, 168, 11)
+    await drawSignature(doc, page, sign.signature, { x: 292, top: y.signBaseline - 34, w: 244, h: 34 })
+  }
+  return doc.save()
+}
+
+/** The diocese's fillable 2025 Social Media acknowledgment. */
+async function fillSocialMedia(bytes: Uint8Array, p: Profile, sign?: Signing): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes)
+  const form = doc.getForm()
+  const text = (name: string, value: string) => {
+    const field = form.getTextField(name)
+    field.setText(clean(value))
+    field.setFontSize(11)
+  }
+  text('Printed Name', fullName(p))
+  text('Diocesan Location', location(p))
+  if (sign) {
+    text('Date', sign.date)
+    // The "Signature" box is a digital-signature field (x 138, y 225, 401 x 29 from the bottom); draw the image in it.
+    const page = doc.getPage(0)
+    await drawSignature(doc, page, sign.signature, { x: 142, top: page.getHeight() - 225 - 28, w: 300, h: 26 })
+  }
+  form.updateFieldAppearances(await doc.embedFont(StandardFonts.Helvetica))
+  if (sign) {
+    form.removeField(form.getField('Signature')) // an empty digital-signature box has nothing to flatten
+    form.flatten()
   }
   return doc.save()
 }
@@ -191,7 +220,7 @@ async function fillNsor(bytes: Uint8Array, p: Profile, sign?: Signing): Promise<
   return doc.save()
 }
 
-// --- Forms re-typeset here because the diocese's copies are low-quality scans ---
+// --- The CPSL acknowledgment is re-typeset here because the diocese only publishes it as a scan ---
 
 const LETTER: [number, number] = [612, 792]
 
@@ -281,19 +310,6 @@ async function typesetAcknowledgment(
 
 const SIGNED_NOTE = 'Re-typeset from the Diocese of Allentown form for legibility.'
 
-function fillSocial(p: Profile, sign?: Signing) {
-  return typesetAcknowledgment(p, {
-    subtitle: ['SOCIAL MEDIA and ELECTRONIC COMMUNICATIONS POLICIES', 'ACKNOWLEDGMENT and CONSENT FORM'],
-    paragraphs: [
-      'To be signed by all clergy, religious, employees, volunteers, aspirants, and seminarians of the Diocese of Allentown.',
-      'By signing below, I acknowledge and agree to the following:',
-      '1)  I have received, read, and understand the Diocese of Allentown’s “Social Media and Electronic Communications Policies” (the “Policies”).',
-      '2)  I agree to abide by the Policies, as they may be updated from time to time.',
-      '3)  I understand that any violation of the Policies may result in disciplinary action, including termination of employment or removal from ministry or other service.',
-    ],
-  }, sign)
-}
-
 function fillCpsl(p: Profile, sign?: Signing) {
   return typesetAcknowledgment(p, {
     subtitle: ['DIOCESE OF ALLENTOWN', 'CHILD PROTECTIVE SERVICES LAW POLICY', 'ACKNOWLEDGMENT FORM'],
@@ -317,16 +333,16 @@ export async function fillForm(id: FormId, p: Profile, load: LoadBytes, sign?: S
       return { bytes: await fillBackgroundAuth(await load('forms/background-check-authorization.pdf'), p, sign), filename: `background-check-authorization${suffix}.pdf` }
     case 'sexabuse':
       return {
-        bytes: await fillAcknowledgment(await load('forms/sexual-abuse-acknowledgement.pdf'), p, { nameBaseline: 442, locationBaseline: 442, signBaseline: 373 }, sign),
+        bytes: await fillAcknowledgment(await load('forms/sexual-abuse-acknowledgement.pdf'), p, { signBaseline: 467, locationBaseline: 523, nameBaseline: 567 }, sign),
         filename: `sexual-abuse-acknowledgment${suffix}.pdf`,
       }
     case 'conduct':
       return {
-        bytes: await fillAcknowledgment(await load('forms/code-of-conduct-acknowledgement.pdf'), p, { nameBaseline: 456, locationBaseline: 456, signBaseline: 373 }, sign),
+        bytes: await fillAcknowledgment(await load('forms/code-of-conduct-acknowledgement.pdf'), p, { signBaseline: 453, locationBaseline: 509, nameBaseline: 553 }, sign),
         filename: `code-of-conduct-acknowledgment${suffix}.pdf`,
       }
     case 'social':
-      return { bytes: await fillSocial(p, sign), filename: `social-media-acknowledgment${suffix}.pdf` }
+      return { bytes: await fillSocialMedia(await load('forms/social-media-acknowledgement.pdf'), p, sign), filename: `social-media-acknowledgment${suffix}.pdf` }
     case 'cpsl':
       return { bytes: await fillCpsl(p, sign), filename: `cpsl-acknowledgment${suffix}.pdf` }
     case 'nsor':

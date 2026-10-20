@@ -77,12 +77,13 @@ Set your school's name, city and coordinator in `src/data/site.ts`. To offer syn
 | --- | --- |
 | The school, its city, or its LSEC (coordinator) | `src/data/site.ts` |
 | Checklist items, steps, links, renewal periods | `src/data/requirements.ts` |
-| A blank form or instruction sheet | Replace the file in `public/forms/` (same name) |
+| A blank form or instruction sheet | Replace the file in `public/forms/` (same name), from the diocese's Safe Environment Policies page |
 | A form's layout | Field positions in `src/pdf/fill.ts`, then check a filled-in copy by eye |
 | Which details a form uses | `src/data/formFields.ts` |
 
-The Social Media and CPSL acknowledgments are re-typeset in `src/pdf/fill.ts` because the diocese's copies are
-low-quality scans; the originals are linked from those checklist items.
+Policies and forms come from the diocese's [Safe Environment Policies page](https://www.allentowndiocese.org/safe-environment-policies);
+check it when updating. The CPSL acknowledgment is re-typeset in `src/pdf/fill.ts` because the diocese only publishes it
+as a scan; the 2025 original is linked from that checklist item.
 
 ## Development
 

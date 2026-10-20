@@ -1,10 +1,14 @@
 import type { GroupId, Requirement } from '../types'
 import { site } from './site'
 
-// Source: "Safe Environment Parish & School Volunteer Requirements Checklist" (Diocese of Allentown, rev. 2/14/2023)
-// plus the diocese's step-by-step instruction sheets. Keep this in sync with those documents.
+// Sources: the diocese's Safe Environment Policies page (site.policiesUrl), which has the current policies and
+// acknowledgment forms; the "Safe Environment Parish & School Volunteer Requirements Checklist" (rev. 2/14/2023);
+// and the diocese's step-by-step instruction sheets. Keep this in sync with those documents.
 
 const forms = (file: string) => `forms/${file}`
+/** Where the diocese's Safe Environment page links its policies and forms. */
+const diocese = (file: string) => `https://adtoday.nyc3.digitaloceanspaces.com/${file}`
+const policiesPage = { label: 'All diocese Safe Environment policies', href: site.policiesUrl }
 
 export const requirements: Requirement[] = [
   {
@@ -15,7 +19,10 @@ export const requirements: Requirement[] = [
     summary: 'Pennsylvania State Police record check, done online and free for volunteers. Must be less than a year old when you hand it in.',
     time: 'Results are usually immediate',
     validYears: 5,
-    links: [{ label: 'Pennsylvania Access To Criminal History (PATCH)', href: 'https://epatch.pa.gov/' }],
+    links: [
+      { label: 'Pennsylvania Access To Criminal History (PATCH)', href: 'https://epatch.pa.gov/' },
+      { label: 'Diocese background check policy', href: diocese('backgroundcheckpolicy-1.pdf') },
+    ],
     steps: [
       'Go to the PATCH site and click “New Volunteer Record Check” on the main page. Volunteer checks are free.',
       'Fill in your information and submit the request. It asks for your Social Security Number; it isn’t required, but it’s recommended.',
@@ -83,11 +90,9 @@ export const requirements: Requirement[] = [
     title: 'Sexual Abuse Policy Acknowledgment (2022)',
     summary: 'Read the 2022 policy, then sign the acknowledgment.',
     time: 'A few minutes',
-    links: [
-      { label: 'Read the policy', href: 'https://www.allentowndiocese.org/sites/default/files/2023-01/SexualAbusePolicy2022.pdf' },
-    ],
+    links: [{ label: 'Read the policy', href: diocese('SexualAbusePolicy2022.pdf') }, policiesPage],
     steps: [
-      'Read the policy (link above) or attend a diocesan training presentation.',
+      'Read the policy (link below) or attend a diocesan training presentation.',
       'Generate the form below. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
@@ -97,14 +102,12 @@ export const requirements: Requirement[] = [
     id: 'conduct',
     number: 5,
     group: 'sign',
-    title: 'Code of Conduct Acknowledgment (2022)',
-    summary: 'Read the 2022 Code of Conduct, then sign the acknowledgment.',
+    title: 'Code of Conduct Acknowledgment',
+    summary: 'Read the Code of Conduct (updated June 2025), then sign the acknowledgment.',
     time: 'A few minutes',
-    links: [
-      { label: 'Read the policy', href: 'https://www.allentowndiocese.org/sites/default/files/2023-01/CodeofConduct2022.pdf' },
-    ],
+    links: [{ label: 'Read the Code of Conduct', href: diocese('updated-Code-of-Conduct-PolicyCSAM6-5-25.pdf') }, policiesPage],
     steps: [
-      'Read the policy (link above) or attend a diocesan training presentation.',
+      'Read the Code of Conduct (link below) or attend a diocesan training presentation.',
       'Generate the form below. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
@@ -114,22 +117,16 @@ export const requirements: Requirement[] = [
     id: 'social',
     number: 6,
     group: 'sign',
-    title: 'Social Media & Electronic Communications Acknowledgment',
-    summary: 'Read the social media policy, then sign the consent form.',
+    title: 'Social Media & Electronic Communications Acknowledgment (2025)',
+    summary: 'Read the 2025 social media policy, then sign the consent form.',
     time: 'A few minutes',
-    links: [
-      {
-        label: 'Read the policy',
-        href: 'https://www.allentowndiocese.org/sites/default/files/2023-01/SocialMediaPolicy2022.pdf',
-      },
-    ],
+    links: [{ label: 'Read the 2025 policy', href: diocese('socialmediaelectroniccommunicationspolicies.pdf') }, policiesPage],
     steps: [
-      'Read the policy (link above).',
+      'Read the policy (link below).',
       'Generate the form below. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
-    form: { id: 'social', label: 'Social Media Acknowledgment' },
-    references: [{ label: 'Original scanned form', file: forms('social-media-original-scan.pdf') }],
+    form: { id: 'social', label: 'Social Media Acknowledgment (2025)' },
   },
   {
     id: 'pgc',
@@ -161,11 +158,12 @@ export const requirements: Requirement[] = [
     validYears: 5,
     links: [
       { label: 'University of Pittsburgh (reportabusepa.pitt.edu)', href: 'https://www.reportabusepa.pitt.edu/PublicStudentSignUp.aspx' },
+      { label: 'En español: Universidad de Pittsburgh', href: 'https://www.reportabusepa.pitt.edu/LoginES.aspx' },
       { label: 'PA Family Support Alliance (pafsa.org)', href: 'https://pafsa.org/' },
     ],
     steps: [
-      'Option 1: go to reportabusepa.pitt.edu, fill in the required fields, click “Submit” to create an account, log in on the “Welcome” tab, and complete the training (3-hour minimum).',
-      'Option 2: go to pafsa.org → “Trainings & Programs” → “Mandated Reporter Training”, find an upcoming virtual session you can attend, fill in the required fields (marked *) and register. You will get the Zoom link by email.',
+      'Option 1, online any time: go to reportabusepa.pitt.edu, fill in the required (blue) fields and click “Submit” to create a username and password, log in on the “Welcome” tab, and complete the training (3 hours minimum). A Spanish version is linked below.',
+      'Option 2, live on Zoom: go to pafsa.org → “Trainings & Programs” → “Mandated Reporter Training”, scroll to “Upcoming Virtual Sessions at no cost”, pick a date and time, fill in the required fields (marked *) and click “Register”. You’ll get the Zoom link by email. The certificate can take up to two weeks to arrive by email.',
       'When you finish, print or take a picture of your certificate and give it to your supervisor or LSEC.',
       'Keep your login information; the training expires every 5 years.',
     ],
@@ -178,14 +176,14 @@ export const requirements: Requirement[] = [
     title: 'Child Protective Services Law (CPSL) Acknowledgment',
     summary: 'Read the Child Protective Services Law policy, then sign.',
     time: 'A few minutes',
-    links: [],
+    links: [{ label: 'CPSL policy, flow chart and form (2025)', href: diocese('2025-CPSL.pdf') }, policiesPage],
     steps: [
-      'Read the Child Protective Services Law policy and the flow chart for mandated reporters (open the original document below).',
+      'Read the Child Protective Services Law policy and the flow chart for mandated reporters (link below).',
       'Generate the acknowledgment form. Your name and location are filled in.',
       'Print it, then sign and date it by hand. Give it to your LSEC.',
     ],
     form: { id: 'cpsl', label: 'CPSL Acknowledgment Form' },
-    references: [{ label: 'CPSL policy and flow chart (original scan)', file: forms('cpsl-policy-original-scan.pdf') }],
+    references: [{ label: 'Saved copy of the 2025 CPSL policy', file: forms('cpsl-policy-2025.pdf') }],
   },
   {
     id: 'bgauth',

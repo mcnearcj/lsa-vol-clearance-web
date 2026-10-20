@@ -456,6 +456,10 @@ export default function App() {
                 <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
                   Parish &amp; School Volunteer Requirements Checklist (PDF)
                 </a>
+                . Its policies and forms come from the diocese’s{' '}
+                <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
+                  Safe Environment Policies page
+                </a>
                 . It’s a helper, not an official diocesan site. Your coordinator has the final word on what you need.
               </p>
             </div>
@@ -558,7 +562,13 @@ export default function App() {
       <SignDialog open={signOpen} profile={profile} onClose={() => setSignOpen(false)} onEditInfo={() => setTab('info')} onSigned={markSigned} />
 
       <footer className="foot">
-        <p>Not an official Diocese of Allentown website. Requirements from the diocese’s checklist revised 2/14/2023.</p>
+        <p>
+          Not an official Diocese of Allentown website. Policies and forms from the diocese’s{' '}
+          <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
+            Safe Environment Policies page
+          </a>
+          ; requirements from its checklist revised 2/14/2023.
+        </p>
         <p>
           <button className="link" onClick={openReport}>
             Report a problem
