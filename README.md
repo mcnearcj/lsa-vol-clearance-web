@@ -27,8 +27,10 @@ official diocesan site. Another school or parish can host its own copy (see belo
 ## Privacy and security
 
 - Info and progress are stored in the volunteer's own browser. PDFs are filled in on the device.
-- The **SSN** is only asked for when making forms, used for those files, and never saved, synced or sent. The file links
-  are released when the person leaves the page or clicks "Clear files".
+- The **SSN** is only asked for when making forms, used for those files, and never saved, synced or sent. The files
+  themselves exist only in the browser tab's memory; the page says so and offers "Delete these files now", and they're
+  also erased when the choices change or the page closes. Copies the person opens or downloads are theirs to delete, and
+  the page reminds them to on shared computers.
 - **Sync is end-to-end encrypted.** The password is stretched (PBKDF2) on the device into two unrelated values: a
   sign-in secret, the only thing Supabase sees, and an AES-GCM key that encrypts the data before upload. The database
   holds ciphertext only, so the site owner can't read it. The key is kept on the device as a non-extractable key in

@@ -79,6 +79,9 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   const [stale, setStale] = useState(false)
   const [files, setFiles] = useState<ReadyFile[]>([])
   const [madeWithSsn, setMadeWithSsn] = useState(false)
+  // Whether the person opened or downloaded a copy (those live outside this page), and whether they just deleted.
+  const [copiedOut, setCopiedOut] = useState(false)
+  const [deleted, setDeleted] = useState<null | { copiedOut: boolean }>(null)
   const pad = useRef<HTMLCanvasElement>(null)
   const drawing = useRef<{ x: number; y: number } | null>(null)
   const urls = useRef<string[]>([])
@@ -91,6 +94,13 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     urls.current = []
     setFiles([])
     setMadeWithSsn(false)
+    setCopiedOut(false)
+    setDeleted(null)
+  }
+  const deleteFiles = () => {
+    const hadCopies = copiedOut
+    releaseFiles()
+    setDeleted({ copiedOut: hadCopies })
   }
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), [])
 
@@ -395,6 +405,9 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
       {files.length > 0 && (
         <div className="ready" role="status">
           <h4>Your files are ready</h4>
+          <p className="small">
+            They’re held only in this browser tab’s memory. Nothing was uploaded or saved. They’re erased when you delete them below, change your choices, or close this page.
+          </p>
           <ul>
             {files.map((f) => (
               <li key={f.url}>
@@ -403,10 +416,10 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
                   <small>{f.note}</small>
                 </div>
                 <div className="row">
-                  <a className="secondary" href={f.url} target="_blank" rel="noopener">
+                  <a className="secondary" href={f.url} target="_blank" rel="noopener" onClick={() => setCopiedOut(true)}>
                     Open
                   </a>
-                  <a className="ghost" href={f.url} download={f.filename}>
+                  <a className="ghost" href={f.url} download={f.filename} onClick={() => setCopiedOut(true)}>
                     Download
                   </a>
                 </div>
@@ -414,13 +427,23 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
             ))}
           </ul>
           {madeWithSsn && <p className="small">The forms file contains your Social Security Number. Print it or hand it over in person rather than emailing it as a plain attachment.</p>}
-          <p className="small">
-            Check every page before you hand anything in. These links work until you leave this page.{' '}
-            <button className="link" onClick={releaseFiles}>
-              Clear files
+          <p className="small">Check every page before you hand anything in.</p>
+          <div className="row">
+            <button className="danger" onClick={deleteFiles}>
+              Delete these files now
             </button>
+          </div>
+          <p className="small">
+            A downloaded copy is saved on your device, usually in your Downloads folder, and an opened copy stays in its tab until you close it. On a shared computer, delete those too.
           </p>
         </div>
+      )}
+
+      {deleted && (
+        <p className="notice ok" role="status">
+          Deleted. The files are no longer in this page’s memory.
+          {deleted.copiedOut && ' You opened or downloaded a copy: close that tab, and if this computer is shared, delete the file from your Downloads folder.'}
+        </p>
       )}
 
       <label className="check handed-in">
