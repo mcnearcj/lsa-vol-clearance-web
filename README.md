@@ -20,7 +20,7 @@ official diocesan site. Another school or parish can host its own copy (see belo
   and what is still outstanding, based on what they marked on the site). One "handed in" checkbox tracks the forms.
 - **My info.** Entered once, used on every form, with a note on which forms use each section. If anything a form uses is
   blank, the site says so before and after the files are made.
-- **Sync** (optional). Sign in with an email and one password to keep info and progress in step across devices and tabs.
+- **Cloud sync** (optional). Sign in with an email and one password to keep info and progress in step across devices and tabs.
 - **Help.** Who to ask (the school's LSEC and the diocese's contact), FAQs (including limited volunteers), and "Report a
   problem".
 - **Technical info.** How the site and sync work, why sign-in emails come from Supabase, the source code, and the
@@ -57,7 +57,7 @@ A static React + TypeScript site built with Vite and hosted on GitHub Pages. The
 
 ## Setting up Supabase (sync and bug reports)
 
-Optional. Without it, the Sync tab explains that sync isn't turned on, and "Report a problem" offers a pre-filled GitHub issue.
+Optional. Without it, the Cloud sync tab explains that cloud sync isn't turned on, and "Report a problem" offers a pre-filled GitHub issue.
 
 1. Create a free Supabase project.
 2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates the `vault` table (one encrypted row

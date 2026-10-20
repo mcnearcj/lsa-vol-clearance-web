@@ -138,9 +138,10 @@ main,
 .tabs button:first-child { margin-left: -12px; }
 .tabs button:hover { color: var(--band-text); }
 .tabs button.active { color: var(--band-text); border-bottom-color: var(--band-text); }
-@media (max-width: 420px) {
-  .tabs button { padding-inline: 8px; font-size: 0.9rem; }
-  .tabs button:first-child { margin-left: -8px; }
+@media (max-width: 480px) {
+  .tabs { gap: 0; }
+  .tabs button { padding-inline: 6px; font-size: 0.875rem; }
+  .tabs button:first-child { margin-left: -6px; }
 }
 main { padding-block: 20px 40px; display: flex; flex-direction: column; gap: 20px; }
 main > div { display: flex; flex-direction: column; gap: 16px; }

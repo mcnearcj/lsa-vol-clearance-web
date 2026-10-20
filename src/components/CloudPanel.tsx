@@ -527,8 +527,8 @@ export function CloudPanel({ profile, progress, onRestore, onRemoteUpdate, onSta
   if (!cloudConfigured) {
     return (
       <section className="panel">
-        <h3>Sync</h3>
-        <p>Sync isn’t turned on for this site. Your info stays in this browser.</p>
+        <h3>Cloud sync</h3>
+        <p>Cloud sync isn’t turned on for this site. Your info stays in this browser.</p>
       </section>
     )
   }
@@ -767,14 +767,14 @@ export function CloudPanel({ profile, progress, onRestore, onRemoteUpdate, onSta
 
   return (
     <section className="panel cloud">
-      <h3>Sync across devices</h3>
+      <h3>Cloud sync across devices</h3>
       <p>Everything is scrambled on this device with your password before it’s uploaded, so only you can read it.</p>
-      <p className="callout">This site is a prototype, so accounts and synced copies may be deleted. Use sync for convenience, and keep your own record of your progress.</p>
+      <p className="callout">This site is a prototype, so accounts and synced copies may be deleted. Use cloud sync for convenience, and keep your own record of your progress.</p>
 
       <ol className="steps-ui">
         {step(
           1,
-          step1Done ? 'Signed in' : user && recovering ? 'Set a new password' : user ? 'Turn sync back on' : 'Sign in or create an account',
+          step1Done ? 'Signed in' : user && recovering ? 'Set a new password' : user ? 'Turn cloud sync back on' : 'Sign in or create an account',
           step1Done ? 'done' : 'active',
           step1,
           step1Done && (

@@ -16,12 +16,12 @@ type Tab = 'checklist' | 'info' | 'sync' | 'help' | 'tech'
 const tabs: [Tab, string][] = [
   ['checklist', 'Checklist'],
   ['info', 'My info'],
-  ['sync', 'Sync'],
+  ['sync', 'Cloud sync'],
   ['help', 'Help'],
   ['tech', 'Tech info'],
 ]
 
-/** Email links from the sign-in service land with details in the hash; open the Sync tab for them. */
+/** Email links from the sign-in service land with details in the hash; open the Cloud sync tab for them. */
 const initialTab = (): Tab => (/(access_token|error_description|type=recovery)/.test(window.location.hash) ? 'sync' : 'checklist')
 
 const asset = (file: string) => `${import.meta.env.BASE_URL}${file}`
@@ -39,12 +39,12 @@ const syncDot: Partial<Record<SyncStatus, 'ok' | 'warn' | 'off'>> = {
 const syncLabel: Record<SyncStatus, string> = {
   unavailable: '',
   'signed-out': 'Not synced',
-  locked: 'Sync paused: sign in again',
-  attention: 'Sync needs your attention',
-  error: 'Sync couldn’t reach the server',
+  locked: 'Cloud sync paused: sign in again',
+  attention: 'Cloud sync needs your attention',
+  error: 'Cloud sync couldn’t reach the server',
   saving: 'Syncing…',
   saved: 'Synced',
-  manual: 'Automatic sync is off',
+  manual: 'Automatic cloud sync is off',
 }
 
 const timeOf = (iso: string) => {
@@ -252,7 +252,7 @@ export default function App() {
                   <span>{sync === 'saved' && syncAt ? `Synced ${timeOf(syncAt)}` : syncLabel[sync]}</span>
                   {['signed-out', 'locked', 'attention', 'error', 'manual'].includes(sync) && (
                     <button className="link" onClick={() => setTab('sync')}>
-                      {sync === 'signed-out' ? 'Set up sync' : sync === 'manual' ? 'Sync settings' : 'Fix this'}
+                      {sync === 'signed-out' ? 'Set up cloud sync' : sync === 'manual' ? 'Cloud sync settings' : 'Fix this'}
                     </button>
                   )}
                 </p>
@@ -318,7 +318,7 @@ export default function App() {
 
         <div hidden={tab !== 'sync'}>
           <div className="page-intro">
-            <h2>Sync</h2>
+            <h2>Cloud sync</h2>
             <p>Sign in to keep your info and checklist in sync across your phone and computer, and safe if you clear your browser.</p>
           </div>
 
@@ -407,14 +407,14 @@ export default function App() {
                 <dt>How is my Social Security Number handled here?</dt>
                 <dd>It’s only asked for under “Forms to sign”, and only to fill in the files you make there. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
                 <dt>Where is my information kept?</dt>
-                <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
+                <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn it off on the Cloud sync page.</dd>
                 <dt>Can I count on the site to remember my progress?</dt>
                 <dd>
                   Not completely, while it’s a prototype. Synced copies and accounts may be deleted as the site changes, and clearing your browser erases what’s saved on this device. Keep your own record too: the diocese’s checklist, your certificates and result letters, and the submission checklist you can download with your forms.
                 </dd>
                 <dt>I’m using a shared computer. Is that OK?</dt>
                 <dd>
-                  Yes. The easiest way is a private window (called Incognito in Chrome, InPrivate in Edge, or Private Browsing in Safari and Firefox). Everything you enter is cleared when you close it, so sign in to Sync first if you want to keep your progress.
+                  Yes. The easiest way is a private window (called Incognito in Chrome, InPrivate in Edge, or Private Browsing in Safari and Firefox). Everything you enter is cleared when you close it, so sign in to Cloud sync first if you want to keep your progress.
                   <br />
                   <br />
                   In a normal window, your info stays on the computer until you clear it. Check the name at the top of each page, and when you’re done, choose “Not you?” or “Erase my data” below. If you see someone else’s name, choose “Not you?” to start fresh.
@@ -430,7 +430,7 @@ export default function App() {
 
             <section className="panel">
               <h3>Erase my data</h3>
-              <p>Removes your info and checklist from this browser and signs you out of sync here. It doesn’t delete your synced copy; do that on the Sync page.</p>
+              <p>Removes your info and checklist from this browser and signs you out of cloud sync here. It doesn’t delete your synced copy; do that on the Cloud sync page.</p>
               <div className="row">
                 {confirmErase ? (
                   <>
@@ -467,15 +467,15 @@ export default function App() {
               <dl className="faq">
                 <dt>Where does it run?</dt>
                 <dd>It’s a static website with no server of its own. Your info is saved in your browser, and forms are filled in on your device, so nothing is uploaded to make them.</dd>
-                <dt>Do I need sync?</dt>
+                <dt>Do I need cloud sync?</dt>
                 <dd>
-                  No. Everything on the site works without an account: the checklist, My info and your documents. Sync is a convenience if you want your progress on more than one device. It’s also a proof of concept, showing that the site could keep track of volunteers’ progress if the diocese adopted it formally. While this is a prototype, synced copies and accounts may be deleted, so keep your own record too.
+                  No. Everything on the site works without an account: the checklist, My info and your documents. Cloud sync is a convenience if you want your progress on more than one device. It’s also a proof of concept, showing that the site could keep track of volunteers’ progress if the diocese adopted it formally. While this is a prototype, synced copies and accounts may be deleted, so keep your own record too.
                 </dd>
-                <dt>What does sync do?</dt>
+                <dt>What does cloud sync do?</dt>
                 <dd>
                   When you sign in, the site keeps one copy of your info and checklist online. Each device you sign in on sends its changes there and picks up changes from your other devices: when you open the page, when you come back to it, and about once a minute while it’s open. If two devices change different things, both changes are kept. Your Social Security Number and signature are never part of it.
                 </dd>
-                <dt>How is sync kept private?</dt>
+                <dt>How is cloud sync kept private?</dt>
                 <dd>
                   Your info is locked with your password on your own device before it’s uploaded. Your password is turned into two separate values: one that signs you in, and an encryption key that scrambles your info. Only the scrambled copy is sent and stored, and the key never leaves your device, so no one running the site can read it. This is also why a password reset can’t recover an old synced copy: without your old password, no one can unlock it. Your device still has your info, though, and syncs it again after the reset.
                 </dd>
