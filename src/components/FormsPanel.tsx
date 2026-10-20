@@ -1,10 +1,10 @@
 import '@fontsource-variable/dancing-script'
 import { useEffect, useRef, useState } from 'react'
 import { makeChecklist } from '../checklistDownload'
-import { fieldLabels, formFields } from '../data/formFields'
-import { requirements } from '../data/requirements'
+import { missingFields } from '../data/formFields'
+import { FORMS, FORM_ORDER } from '../data/forms'
 import { site } from '../data/site'
-import { formatDate, todayISO } from '../dates'
+import { formatDate, todayISO, todayUS } from '../dates'
 import { ssnAsTyped } from '../ssn'
 import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
 import { personName, ssnOnAuthorization, type FormId, type ItemProgress, type Profile, type Progress } from '../types'
@@ -27,20 +27,9 @@ interface ReadyFile {
   url: string
 }
 
-const FORMS: FormId[] = ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth', 'nsor']
 const INK = '#14215c'
 const SCRIPT_FONT = '"Dancing Script Variable", "Brush Script MT", cursive'
 
-const formReq = (id: FormId) => requirements.find((r) => r.form?.id === id && r.id === id)!
-const formNotes: Partial<Record<FormId, string>> = {
-  bgauth: 'Lets the diocese run your background checks. Give it to your LSEC, or mail it to Janice Woolley, Audit & Training Supervisor, Diocese of Allentown, PO Box F, Allentown PA 18105.',
-  nsor: 'The state’s form: you send this one to the state, not your LSEC.',
-}
-
-const today = () => {
-  const d = new Date()
-  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
-}
 
 const loadBytes = async (file: string) => {
   const res = await fetch(`${import.meta.env.BASE_URL}${file}`)
@@ -76,7 +65,7 @@ function cropToInk(src: HTMLCanvasElement): HTMLCanvasElement | null {
 }
 
 export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: Props) {
-  const [chosen, setChosen] = useState<FormId[]>(FORMS)
+  const [chosen, setChosen] = useState<FormId[]>(FORM_ORDER)
   const [withChecklist, setWithChecklist] = useState(true)
   const [how, setHow] = useState<'paper' | 'screen'>('paper')
   const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw')
@@ -163,7 +152,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   // Changing what's chosen clears files made from the old choices, so the links always match the boxes.
   const toggle = (id: FormId) => {
     releaseFiles()
-    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : FORMS.filter((f) => f === id || c.includes(f))))
+    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : FORM_ORDER.filter((f) => f === id || c.includes(f))))
   }
   const chooseHow = (h: 'paper' | 'screen') => {
     releaseFiles()
@@ -173,7 +162,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   const ssnDigits = ssn.replace(/\D/g, '')
   const ssnOk = ssnDigits.length === 0 || ssnDigits.length === 9
   const hasSignature = sigMode === 'draw' ? inked : typedName.trim().length > 1
-  const missing = [...new Set(chosen.flatMap((f) => formFields[f]))].filter((k) => !String(profile[k]).trim()).map((k) => fieldLabels[k] ?? k)
+  const missing = missingFields(chosen, profile)
   const nothingChosen = chosen.length === 0 && !withChecklist
   const ready = !nothingChosen && ssnOk && (how === 'paper' || chosen.length === 0 || (agreed && hasSignature))
 
@@ -202,7 +191,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     releaseFiles()
     try {
       const made: ReadyFile[] = []
-      const signedOn = how === 'screen' && chosen.length ? today() : undefined
+      const signedOn = how === 'screen' && chosen.length ? todayUS() : undefined
       const asUrl = (bytes: Uint8Array) => {
         const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }))
         urls.current.push(url)
@@ -242,20 +231,18 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
       <fieldset className="pick">
         <legend>Choose what you need</legend>
         <ul>
-          {FORMS.map((id) => {
-            const req = formReq(id)
-            const policy = req.links.find((l) => l.label.startsWith('Read') || l.label.startsWith('CPSL'))
+          {FORMS.map(({ id, label, policy, note }) => {
             return (
               <li key={id}>
                 <label className="check">
                   <input id={`form-${id}`} type="checkbox" checked={chosen.includes(id)} onChange={() => toggle(id)} />
                   <span>
-                    {req.form!.label}
-                    {formNotes[id] && <small>{formNotes[id]}</small>}
+                    {label}
+                    {note && <small>{note}</small>}
                   </span>
                 </label>
                 {policy && (
-                  <a href={policy.href} target="_blank" rel="noreferrer noopener">
+                  <a href={policy} target="_blank" rel="noreferrer noopener">
                     Read the policy<span className="ext" aria-label="(opens in a new tab)">↗</span>
                   </a>
                 )}

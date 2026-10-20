@@ -31,8 +31,10 @@ export const formFields: Record<FormId, (keyof Profile)[]> = {
   nsor: ['firstName', 'lastName', ...contact],
 }
 
-export function missingFields(form: FormId, p: Profile): string[] {
-  return formFields[form].filter((k) => !String(p[k]).trim()).map((k) => fieldLabels[k] ?? k)
+/** The details the chosen forms use that are still blank, by their on-screen names. */
+export function missingFields(forms: FormId[], p: Profile): string[] {
+  const keys = [...new Set(forms.flatMap((f) => formFields[f]))]
+  return keys.filter((k) => !String(p[k]).trim()).map((k) => fieldLabels[k] ?? k)
 }
 
 /** Every field any form uses, for the completeness count on "My info". */

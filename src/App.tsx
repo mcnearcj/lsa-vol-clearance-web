@@ -113,7 +113,7 @@ export default function App() {
 
   const st = (id: string) => standing(orderedRequirements.find((r) => r.id === id)!, progress[id]).standing
   // The signable forms are made together in "Forms to sign" and count as one item; the rest are tracked one by one.
-  const tracked = orderedRequirements.filter((r) => r.group !== 'sign' && st(r.id) !== 'na')
+  const tracked = orderedRequirements.filter((r) => st(r.id) !== 'na')
   const formsDone = progress.forms?.status === 'done'
   const total = tracked.length + 1
   const doneCount = tracked.filter((r) => ['current', 'expiring'].includes(st(r.id))).length + (formsDone ? 1 : 0)

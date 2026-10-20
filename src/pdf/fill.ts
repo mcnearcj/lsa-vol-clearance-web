@@ -1,4 +1,5 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
+import { FORM_ORDER } from '../data/forms'
 import { ssnOnAuthorization, type FormId, type Profile } from '../types'
 
 // All filling happens in the browser. Nothing is uploaded anywhere.
@@ -349,14 +350,11 @@ export async function fillForm(id: FormId, p: Profile, load: LoadBytes, o: FillO
   }
 }
 
-/** The forms in the order the diocese's checklist lists them. */
-export const ALL_FORMS: FormId[] = ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth', 'nsor']
-
 /** Fills the chosen forms (signing and dating them when `o.signed` is given), combined into one PDF in checklist order. */
-export async function fillAll(p: Profile, load: LoadBytes, o: FillOptions = {}, forms: FormId[] = ALL_FORMS): Promise<{ bytes: Uint8Array; filename: string }> {
+export async function fillAll(p: Profile, load: LoadBytes, o: FillOptions = {}, forms: FormId[] = FORM_ORDER): Promise<{ bytes: Uint8Array; filename: string }> {
   const out = await PDFDocument.create()
   out.setTitle(`Volunteer clearance forms - ${fullName(p) || 'volunteer'}`)
-  for (const id of ALL_FORMS.filter((f) => forms.includes(f))) {
+  for (const id of FORM_ORDER.filter((f) => forms.includes(f))) {
     const filled = await PDFDocument.load((await fillForm(id, p, load, { ...o, flatten: true })).bytes)
     const pages = await out.copyPages(filled, filled.getPageIndices())
     pages.forEach((pg) => out.addPage(pg))

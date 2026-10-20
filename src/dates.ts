@@ -16,7 +16,13 @@ export function addYears(iso: string, years: number): string | null {
   return `${year}-${m[2]}-${String(day).padStart(2, '0')}`
 }
 
-export function daysUntil(iso: string, from = todayISO()): number {
+/** Today as MM/DD/YYYY, the way the forms want dates written. */
+export const todayUS = () => {
+  const d = new Date()
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
+}
+
+function daysUntil(iso: string, from = todayISO()): number {
   const a = Date.parse(from + 'T00:00:00')
   const b = Date.parse(iso + 'T00:00:00')
   return Math.round((b - a) / 86_400_000)
@@ -29,7 +35,7 @@ export function formatDate(iso: string): string {
 
 export type Standing = 'todo' | 'started' | 'current' | 'expiring' | 'expired' | 'na'
 
-export const EXPIRING_SOON_DAYS = 90
+const EXPIRING_SOON_DAYS = 90
 
 export function standing(req: Requirement, p: ItemProgress | undefined): { standing: Standing; expiresOn?: string } {
   const status = p?.status ?? 'todo'

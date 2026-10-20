@@ -74,8 +74,8 @@ export interface Requirement {
   optional?: boolean
   links: { label: string; href: string }[]
   steps: string[]
-  /** Form the site can pre-fill. */
-  form?: { id: FormId; label: string }
+  /** A form for this item that's made under "Forms to sign". */
+  form?: FormId
   /** Reference PDFs from the diocese (instructions, originals). */
   references?: { label: string; file: string }[]
   /** What the volunteer hands in for this item, for the submission checklist. */

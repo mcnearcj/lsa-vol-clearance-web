@@ -1,14 +1,13 @@
 import type { GroupId, Requirement } from '../types'
 import { site } from './site'
 
-// Sources: the diocese's "Safe Environment School Volunteer Requirements Checklist" (rev. 7/31/2025, from its
-// Safe Environment Requirements page); its Safe Environment Policies page (site.policiesUrl) for current policies and
-// acknowledgment forms; and its step-by-step instruction sheets. Keep this in sync with those documents.
+// The items volunteers track one by one: background checks, trainings and the driver form. The six signable forms
+// are in forms.ts. Sources: the diocese's "Safe Environment School Volunteer Requirements Checklist" (rev. 7/31/2025,
+// from its Safe Environment Requirements page) and its step-by-step instruction sheets. Keep this in sync with them.
 
 const forms = (file: string) => `forms/${file}`
 /** Where the diocese's Safe Environment page links its policies and forms. */
-const diocese = (file: string) => `https://adtoday.nyc3.digitaloceanspaces.com/${file}`
-const policiesPage = { label: 'All diocese Safe Environment policies', href: site.policiesUrl }
+export const diocese = (file: string) => `https://adtoday.nyc3.digitaloceanspaces.com/${file}`
 
 export const requirements: Requirement[] = [
   {
@@ -32,7 +31,7 @@ export const requirements: Requirement[] = [
       'Can’t do it online? Make the Background Check Authorization Form under “Forms to sign”, sign it, and email it to punger@allentowndiocese.org instead.',
       'Questions about PATCH: the State Police helpline is 1-888-783-7972.',
     ],
-    form: { id: 'bgauth', label: 'Background Check Authorization Form' },
+    form: 'bgauth',
   },
   {
     id: 'childabuse',
@@ -87,54 +86,6 @@ export const requirements: Requirement[] = [
     references: [{ label: 'Diocese fingerprint instructions', file: forms('fingerprint-instructions.pdf') }],
   },
   {
-    id: 'sexabuse',
-    number: 4,
-    group: 'sign',
-    title: 'Sexual Abuse Policy Acknowledgment (2022)',
-    handIn: 'Signed Sexual Abuse Policy acknowledgment',
-    summary: 'Read the 2022 policy, then sign the acknowledgment.',
-    time: 'A few minutes',
-    links: [{ label: 'Read the policy', href: diocese('SexualAbusePolicy2022.pdf') }, policiesPage],
-    steps: [
-      'Read the policy (link below) or attend a diocesan training presentation.',
-      'Make it under “Forms to sign”. Your name and location are filled in.',
-      'Print it, then sign and date it by hand. Give it to your LSEC.',
-    ],
-    form: { id: 'sexabuse', label: 'Sexual Abuse Policy Acknowledgment' },
-  },
-  {
-    id: 'conduct',
-    number: 5,
-    group: 'sign',
-    title: 'Code of Conduct Acknowledgment',
-    handIn: 'Signed Code of Conduct acknowledgment',
-    summary: 'Read the Code of Conduct (updated June 2025), then sign the acknowledgment.',
-    time: 'A few minutes',
-    links: [{ label: 'Read the Code of Conduct', href: diocese('updated-Code-of-Conduct-PolicyCSAM6-5-25.pdf') }, policiesPage],
-    steps: [
-      'Read the Code of Conduct (link below) or attend a diocesan training presentation.',
-      'Make it under “Forms to sign”. Your name and location are filled in.',
-      'Print it, then sign and date it by hand. Give it to your LSEC.',
-    ],
-    form: { id: 'conduct', label: 'Code of Conduct Acknowledgment' },
-  },
-  {
-    id: 'social',
-    number: 6,
-    group: 'sign',
-    title: 'Social Media & Electronic Communications Acknowledgment (2025)',
-    handIn: 'Signed Social Media acknowledgment (2025)',
-    summary: 'Read the 2025 social media policy, then sign the consent form.',
-    time: 'A few minutes',
-    links: [{ label: 'Read the 2025 policy', href: diocese('socialmediaelectroniccommunicationspolicies.pdf') }, policiesPage],
-    steps: [
-      'Read the policy (link below).',
-      'Make it under “Forms to sign”. Your name and location are filled in.',
-      'Print it, then sign and date it by hand. Give it to your LSEC.',
-    ],
-    form: { id: 'social', label: 'Social Media Acknowledgment (2025)' },
-  },
-  {
     id: 'pgc',
     number: 7,
     group: 'training',
@@ -178,40 +129,6 @@ export const requirements: Requirement[] = [
     references: [{ label: 'Diocese instructions', file: forms('mandated-reporter-instructions.pdf') }],
   },
   {
-    id: 'cpsl',
-    number: 9,
-    group: 'sign',
-    title: 'Child Protective Services Law (CPSL) Acknowledgment',
-    handIn: 'Signed CPSL acknowledgment',
-    summary: 'Read the Child Protective Services Law policy, then sign.',
-    time: 'A few minutes',
-    links: [{ label: 'CPSL policy, flow chart and form (2025)', href: diocese('2025-CPSL.pdf') }, policiesPage],
-    steps: [
-      'Read the Child Protective Services Law policy and the flow chart for mandated reporters (link below).',
-      'Generate the acknowledgment form. Your name and location are filled in.',
-      'Print it, then sign and date it by hand. Give it to your LSEC.',
-    ],
-    form: { id: 'cpsl', label: 'CPSL Acknowledgment Form' },
-    references: [{ label: 'Saved copy of the 2025 CPSL policy', file: forms('cpsl-policy-2025.pdf') }],
-  },
-  {
-    id: 'bgauth',
-    number: 10,
-    group: 'sign',
-    title: 'Signed Background Check Authorization Form',
-    handIn: 'Signed Background Check Authorization Form',
-    summary: 'Gives the diocese permission to run your background checks.',
-    time: 'A few minutes',
-    note: 'Social Security Number is for employees only. This site never stores it.',
-    links: [],
-    steps: [
-      'Make it under “Forms to sign”. Your personal information is filled in.',
-      'Print it, then sign and date it by hand.',
-      'Give it to your LSEC, or send it to Janice Woolley, Audit & Training Supervisor, PO Box F, Allentown PA 18105. Your parish or school keeps a copy.',
-    ],
-    form: { id: 'bgauth', label: 'Background Check Authorization Form' },
-  },
-  {
     id: 'mvr',
     number: 11,
     group: 'driving',
@@ -247,7 +164,7 @@ export const requirements: Requirement[] = [
       'Submit it one of three ways: mail to Clearance Verification Unit, ChildLine, Department of Human Services, PO Box 8170, Harrisburg, PA 17105-8170; or scan and email to RA-PWNSOR@pa.gov (subject: “NSOR Verification Applicant Last Name”); or hand deliver to the drop box at 2525 North 7th Street, Harrisburg, PA 17110.',
       'Keep a copy as proof of submission. The state emails your verification letter (encrypted) in about 14 days; give a copy to your LSEC. Questions: Clearance Verification Unit, 877-371-5422.',
     ],
-    form: { id: 'nsor', label: 'NSOR Application' },
+    form: 'nsor',
   },
 ]
 
@@ -274,5 +191,5 @@ export const groups: { id: GroupId; title: string; intro: string }[] = [
   },
 ]
 
-/** Requirements in the order the site shows them: grouped, then by the diocese's number. */
+/** Tracked items in the order the site shows them: by group, then by the diocese's number. */
 export const orderedRequirements: Requirement[] = groups.flatMap((g) => requirements.filter((r) => r.group === g.id))

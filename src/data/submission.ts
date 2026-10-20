@@ -1,5 +1,6 @@
 import { formatDate, standing } from '../dates'
 import type { FormId, Progress, Requirement } from '../types'
+import { formInfo } from './forms'
 import { requirements } from './requirements'
 import { site } from './site'
 
@@ -49,7 +50,7 @@ export function submissionChecklist(progress: Progress, download?: DownloadInfo)
   // The signable forms are tracked together: one "handed in" checkbox on the site covers them all.
   const handedIn = progress.forms?.status === 'done'
   const formItem = (id: FormId, detail?: string): SubmissionItem => {
-    const label = byId(id).handIn
+    const label = formInfo(id).handIn
     if (download?.forms.includes(id))
       return download.signedOn
         ? { label, detail, status: `Signed on screen ${download.signedOn}`, done: true }
@@ -68,10 +69,7 @@ export function submissionChecklist(progress: Progress, download?: DownloadInfo)
     {
       title: 'Send to the state',
       items: [
-        {
-          ...formItem('nsor', 'Mail it, scan and email it to RA-PWNSOR@pa.gov, or drop it off. It takes about 14 days.'),
-          label: 'Signed NSOR application (the state’s form, not the diocese’s)',
-        },
+        formItem('nsor', 'Mail it, scan and email it to RA-PWNSOR@pa.gov, or drop it off. It takes about 14 days.'),
       ],
     },
     {

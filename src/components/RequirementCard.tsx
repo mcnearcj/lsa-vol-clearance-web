@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
+import { formInfo } from '../data/forms'
 import type { ItemProgress, Requirement } from '../types'
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
   onGoToForms: () => void
 }
 
-export function StatusIcon({ st }: { st: Standing }) {
+function StatusIcon({ st }: { st: Standing }) {
   const common = { width: 26, height: 26, viewBox: '0 0 26 26', 'aria-hidden': true } as const
   switch (st) {
     case 'current':
@@ -114,7 +115,7 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
 
         {req.form && (
           <p className="form-pointer">
-            The {req.form.label} is filled in for you under{' '}
+            The {formInfo(req.form).label} is filled in for you under{' '}
             <button className="link" onClick={onGoToForms}>
               Forms to sign
             </button>

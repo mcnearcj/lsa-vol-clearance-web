@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { PDFDocument } from 'pdf-lib'
 import { describe, expect, it } from 'vitest'
 import { emptyProfile, type FormId, type Profile } from '../types'
-import { ALL_FORMS, fillAll, fillForm, ssnFmt } from './fill'
+import { FORM_ORDER as ALL_FORMS } from '../data/forms'
+import { fillAll, fillForm, ssnFmt } from './fill'
 
 const load = async (file: string) => new Uint8Array(readFileSync(`public/${file}`))
 
