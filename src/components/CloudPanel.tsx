@@ -769,6 +769,7 @@ export function CloudPanel({ profile, progress, onRestore, onRemoteUpdate, onSta
     <section className="panel cloud">
       <h3>Sync across devices</h3>
       <p>Everything is scrambled on this device with your password before it’s uploaded, so only you can read it.</p>
+      <p className="callout">This site is a prototype, so accounts and synced copies may be deleted. Use sync for convenience, and keep your own record of your progress.</p>
 
       <ol className="steps-ui">
         {step(

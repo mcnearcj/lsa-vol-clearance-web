@@ -160,7 +160,7 @@ export default function App() {
 
       <div className="prototype" role="note">
         <p>
-          <strong>Early prototype.</strong> This site may have bugs. Check each filled-in form before you submit it.{' '}
+          <strong>Early prototype.</strong> It works, but it may have bugs, and saved progress or accounts could be reset. Check each filled-in form before you submit it, and keep your own record of what you’ve done.{' '}
           <button className="link" onClick={openReport}>
             Report a problem
           </button>
@@ -454,6 +454,10 @@ export default function App() {
                 <dd>It’s only asked for under “Forms to sign”, and only to fill in the files you make there. It’s never saved on your device, synced, or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
                 <dt>Where is my information kept?</dt>
                 <dd>In this browser on this device. Forms are filled in on your device too. If you sign in, your info is also synced online, scrambled with your password before it leaves your device so only you can read it. You can turn sync off on the Sync page.</dd>
+                <dt>Can I count on the site to remember my progress?</dt>
+                <dd>
+                  Not completely, while it’s a prototype. Synced copies and accounts may be deleted as the site changes, and clearing your browser erases what’s saved on this device. Keep your own record too: the diocese’s checklist, your certificates and result letters, and the submission checklist you can download with your forms.
+                </dd>
                 <dt>Why did my sign-in email come from Supabase?</dt>
                 <dd>
                   Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
