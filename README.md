@@ -43,6 +43,10 @@ Both are optional. Without them the Sync tab offers a backup file, and "Report a
      Actions → **Variables**, then re-run the deploy.
    - Local builds: copy `.env.example` to `.env.local` and fill it in.
 5. Read bug reports in the dashboard under **Table Editor → bug_reports**.
+6. Optional: to get each bug report by email, sign up at [Resend](https://resend.com) with the address that should
+   receive them, create an API key, put both in the two `EDIT` lines of
+   [`supabase/bug_report_emails.sql`](supabase/bug_report_emails.sql), and run it in the SQL Editor. The key is kept in
+   Supabase Vault. Emails are capped at 20 an hour, and reports are always saved even if an email fails.
 
 Sign-in emails come from Supabase's built-in sender, and the site tells people so. To send them from your own
 address (and edit the email templates), set up custom SMTP under **Authentication → Emails → SMTP Settings**, then
