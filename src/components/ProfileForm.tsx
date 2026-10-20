@@ -111,7 +111,7 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
             ['yes', 'Yes'],
             ['no', 'No'],
           ])}
-          {choice('gender', 'Sex (as asked on the form)', [
+          {choice('gender', 'Sex', [
             ['Female', 'Female'],
             ['Male', 'Male'],
           ])}

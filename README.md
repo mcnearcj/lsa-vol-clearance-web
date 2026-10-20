@@ -11,17 +11,19 @@ official diocesan site. Another school or parish can host its own copy (see belo
 
 - **Checklist.** The background checks (PATCH, Child Abuse History, FBI fingerprints, NSOR), trainings (Protecting God's
   Children, Mandated Reporter) and the driver form, each with step-by-step instructions, links, a "Mark done" date and
-  renewal reminders (most last 5 years). A "Start here" panel walks new volunteers through it, and a note explains the
-  diocese's shorter list for limited volunteers and tells people to ask their coordinator if they're unsure.
+  renewal reminders (most last 5 years). A short summary at the top says what the site does and points to Help.
 - **Forms to sign.** The six signable forms (Sexual Abuse, Code of Conduct, Social Media and CPSL acknowledgments, the
   Background Check Authorization and the state's NSOR application) are filled in from the volunteer's info. They pick
   the forms they need, print and sign by hand or sign on screen (draw with a mouse, finger or stylus, or type), and
   optionally add an SSN. Nothing downloads by itself: the site lists the files with Open and Download links. One PDF of
-  the chosen forms, plus a separate **submission checklist** for the volunteer to keep (what to hand in, to whom, and what
-  is still outstanding). One "handed in" checkbox tracks the forms.
+  the chosen forms, plus a separate one-page **submission checklist** for the volunteer to keep (what to hand in, to whom,
+  and what is still outstanding, based on what they marked on the site). One "handed in" checkbox tracks the forms.
 - **My info.** Entered once, used on every form. Shows how complete it is and which forms use each section.
 - **Sync** (optional). Sign in with an email and one password to keep info and progress in step across devices and tabs.
-- **Help.** Who to ask (the school's LSEC and the diocese's contact), FAQs, and "Report a problem".
+- **Help.** Who to ask (the school's LSEC and the diocese's contact), FAQs (including limited volunteers), and "Report a
+  problem".
+- **Technical info.** How the site and sync work, why sign-in emails come from Supabase, the source code, and the
+  adoption proposal.
 - **Shared computers.** Every page shows whose info is loaded, with "Not you?" to clear it.
 
 ## Privacy and security

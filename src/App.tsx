@@ -4,7 +4,6 @@ import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { FormsPanel } from './components/FormsPanel'
-import { allFormFields } from './data/formFields'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
 import { standing } from './dates'
@@ -12,13 +11,14 @@ import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, personName, type Progress, type Profile } from './types'
 
-type Tab = 'checklist' | 'info' | 'sync' | 'help'
+type Tab = 'checklist' | 'info' | 'sync' | 'help' | 'tech'
 
 const tabs: [Tab, string][] = [
   ['checklist', 'Checklist'],
   ['info', 'My info'],
   ['sync', 'Sync'],
   ['help', 'Help'],
+  ['tech', 'Tech info'],
 ]
 
 /** Email links from the sign-in service land with details in the hash; open the Sync tab for them. */
@@ -58,7 +58,6 @@ export default function App() {
   const [tab, setTabState] = useState<Tab>(initialTab)
   const [profile, setProfile] = useStored<Profile>('profile', emptyProfile)
   const [progress, setProgress] = useStored<Progress>('progress', {})
-  const [ui, setUi] = useStored('ui', { introDismissed: false })
   const [message, setMessage] = useState('')
   const [confirmErase, setConfirmErase] = useState(false)
   const [sync, setSync] = useState<SyncStatus>('unavailable')
@@ -124,7 +123,6 @@ export default function App() {
     requestAnimationFrame(() => document.getElementById('forms')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
-  const infoFilled = allFormFields.filter((k) => String(profile[k]).trim()).length
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
   const who = personName(profile)
   const hasData = Boolean(who) || Object.keys(progress).length > 0
@@ -133,7 +131,6 @@ export default function App() {
     clearAllStored()
     setProfile(emptyProfile)
     setProgress({})
-    setUi({ introDismissed: false })
     setResetToken((n) => n + 1)
     setConfirmErase(false)
     setConfirmSwitch(false)
@@ -262,57 +259,14 @@ export default function App() {
               )}
             </section>
 
-            {!ui.introDismissed && (
-              <section className="intro" aria-labelledby="intro-h">
-                <div className="intro-head">
-                  <h2 id="intro-h">Start here</h2>
-                  <button className="ghost small-btn" onClick={() => setUi({ introDismissed: true })}>
-                    Hide
-                  </button>
-                </div>
-                <ol>
-                  <li>
-                    <strong>Add your info once.</strong> The site fills it into your forms.{' '}
-                    <button className="link" onClick={() => setTab('info')}>
-                      {infoFilled ? `My info (${infoFilled} of ${allFormFields.length} filled)` : 'Go to My info'}
-                    </button>
-                  </li>
-                  {sync !== 'unavailable' && (
-                    <li>
-                      <strong>Sign in to sync your progress.</strong> Use it on any device. Free, and only you can read it.{' '}
-                      {sync === 'signed-out' ? (
-                        <button className="link" onClick={() => setTab('sync')}>
-                          Set up sync
-                        </button>
-                      ) : (
-                        <span className="small">Done.</span>
-                      )}
-                    </li>
-                  )}
-                  <li>
-                    <strong>Start the background checks early.</strong> Some take 2–3 weeks to come back.
-                  </li>
-                  <li>
-                    <strong>Make your forms.</strong> They’re filled in for you: print and sign them, or sign on screen.{' '}
-                    <button className="link" onClick={goToForms}>
-                      Go to Forms to sign
-                    </button>
-                  </li>
-                  <li>
-                    <strong>Give everything to {site.lsec.name},</strong> {site.schoolName}’s Local Safe Environment Coordinator (LSEC).
-                  </li>
-                </ol>
-              </section>
-            )}
-
-            <aside className="who-needs" aria-label="Which requirements apply to you">
+            <section className="intro" aria-label="About this site">
               <p>
-                <strong>Not sure what you need?</strong> School volunteers need everything below. The diocese also allows “limited” volunteers, whose duties are strictly limited and who aren’t in a leadership role, to do a shorter list: the forms, Protecting God’s Children, and the driver form if they drive. If you’re not sure which you are, ask {site.lsec.name} before you start.{' '}
+                This site helps you finish {site.schoolName}’s volunteer clearances for the Diocese of Allentown. It lists each background check and training with steps and links, fills in your forms from your info, and makes a checklist of what to hand in to {site.lsec.name}.{' '}
                 <button className="link" onClick={() => setTab('help')}>
-                  More in Help
+                  Questions? See Help
                 </button>
               </p>
-            </aside>
+            </section>
 
             {allDone && (
               <section className="next all-done">
@@ -458,32 +412,12 @@ export default function App() {
                 <dd>
                   Not completely, while it’s a prototype. Synced copies and accounts may be deleted as the site changes, and clearing your browser erases what’s saved on this device. Keep your own record too: the diocese’s checklist, your certificates and result letters, and the submission checklist you can download with your forms.
                 </dd>
-                <dt>Why did my sign-in email come from Supabase?</dt>
-                <dd>
-                  Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
-                </dd>
                 <dt>I’m using a shared computer. Is that OK?</dt>
                 <dd>
                   Yes. The easiest way is a private window (called Incognito in Chrome, InPrivate in Edge, or Private Browsing in Safari and Firefox). Everything you enter is cleared when you close it, so sign in to Sync first if you want to keep your progress.
                   <br />
                   <br />
                   In a normal window, your info stays on the computer until you clear it. Check the name at the top of each page, and when you’re done, choose “Not you?” or “Erase my data” below. If you see someone else’s name, choose “Not you?” to start fresh.
-                </dd>
-                <dt>Who made this, and how does it work?</dt>
-                <dd>
-                  It’s a free, open project. All of the code is public on{' '}
-                  <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
-                    GitHub
-                  </a>
-                  , including how forms are filled in and how sync is encrypted.
-                </dd>
-                <dt>Could the diocese or another school use this?</dt>
-                <dd>
-                  Yes. Any school or parish can host its own copy, and there’s a{' '}
-                  <a href="https://github.com/mcnearcj/lsa-vol-clearance-web/blob/main/docs/PROPOSAL.md" target="_blank" rel="noreferrer noopener">
-                    proposal for diocesan IT
-                  </a>{' '}
-                  covering how it works, privacy, costs and ways to adopt it.
                 </dd>
               </dl>
             </section>
@@ -521,6 +455,43 @@ export default function App() {
             </section>
           </div>
         )}
+        {tab === 'tech' && (
+          <div className="help">
+            <div className="page-intro">
+              <h2>Technical info</h2>
+              <p>How the site works, for anyone curious or thinking of hosting it. You don’t need any of this to use it.</p>
+            </div>
+
+            <section className="panel">
+              <h3>How it works</h3>
+              <dl className="faq">
+                <dt>Where does it run?</dt>
+                <dd>It’s a static website with no server of its own. Your info is saved in your browser, and forms are filled in on your device, so nothing is uploaded to make them.</dd>
+                <dt>How is sync kept private?</dt>
+                <dd>Your password is turned into two separate values on your device: one to sign in, and an encryption key that scrambles your info before it’s uploaded. The server only ever stores the scrambled copy, so no one running the site can read it.</dd>
+                <dt>Why do sign-in emails come from Supabase?</dt>
+                <dd>
+                  Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
+                </dd>
+              </dl>
+            </section>
+
+            <section className="panel">
+              <h3>Source code and adoption</h3>
+              <p>
+                It’s a free, open project. All of the code is public on{' '}
+                <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
+                  GitHub
+                </a>
+                , including how forms are filled in and how sync is encrypted. Any school or parish can host its own copy, and there’s a{' '}
+                <a href="https://github.com/mcnearcj/lsa-vol-clearance-web/blob/main/docs/PROPOSAL.md" target="_blank" rel="noreferrer noopener">
+                  proposal for diocesan IT
+                </a>{' '}
+                covering how it works, privacy, costs and ways to adopt it.
+              </p>
+            </section>
+          </div>
+        )}
       </main>
 
       <footer className="foot">
@@ -535,10 +506,6 @@ export default function App() {
           <button className="link" onClick={openReport}>
             Report a problem
           </button>
-          {' · '}
-          <a href="https://github.com/mcnearcj/lsa-vol-clearance-web" target="_blank" rel="noreferrer noopener">
-            See how this site is built on GitHub
-          </a>
         </p>
       </footer>
     </div>
