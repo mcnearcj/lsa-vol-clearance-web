@@ -467,8 +467,18 @@ export default function App() {
               <dl className="faq">
                 <dt>Where does it run?</dt>
                 <dd>It’s a static website with no server of its own. Your info is saved in your browser, and forms are filled in on your device, so nothing is uploaded to make them.</dd>
+                <dt>Do I need sync?</dt>
+                <dd>
+                  No. Everything on the site works without an account: the checklist, My info and your documents. Sync is a convenience if you want your progress on more than one device. It’s also a proof of concept, showing that the site could keep track of volunteers’ progress if the diocese adopted it formally. While this is a prototype, synced copies and accounts may be deleted, so keep your own record too.
+                </dd>
+                <dt>What does sync do?</dt>
+                <dd>
+                  When you sign in, the site keeps one copy of your info and checklist online. Each device you sign in on sends its changes there and picks up changes from your other devices: when you open the page, when you come back to it, and about once a minute while it’s open. If two devices change different things, both changes are kept. Your Social Security Number and signature are never part of it.
+                </dd>
                 <dt>How is sync kept private?</dt>
-                <dd>Your password is turned into two separate values on your device: one to sign in, and an encryption key that scrambles your info before it’s uploaded. The server only ever stores the scrambled copy, so no one running the site can read it.</dd>
+                <dd>
+                  Your info is locked with your password on your own device before it’s uploaded. Your password is turned into two separate values: one that signs you in, and an encryption key that scrambles your info. Only the scrambled copy is sent and stored, and the key never leaves your device, so no one running the site can read it. This is also why a password reset can’t recover an old synced copy: without your old password, no one can unlock it. Your device still has your info, though, and syncs it again after the reset.
+                </dd>
                 <dt>Why do sign-in emails come from Supabase?</dt>
                 <dd>
                   Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
