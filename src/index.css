@@ -212,6 +212,19 @@ textarea { min-height: 64px; resize: vertical; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field > span { font-size: 0.9rem; font-weight: 600; }
 .field small { font-size: 0.8rem; }
+.field > label { font-size: 0.9rem; font-weight: 600; }
+/* School names are long, so the box takes two columns where there's room. */
+.school-field { grid-column: span 2; }
+@media (max-width: 520px) { .school-field { grid-column: auto; } }
+.combo { position: relative; }
+.combo-list {
+  position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 4px);
+  margin: 0; padding: 4px; list-style: none; max-height: 280px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+}
+.combo-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.combo-list li small { color: var(--muted); white-space: nowrap; }
+.combo-list li.active { background: var(--accent-soft); }
 .check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; }
 .check input { width: 20px; height: 20px; min-height: 0; margin-top: 2px; flex: none; accent-color: var(--accent); }
 

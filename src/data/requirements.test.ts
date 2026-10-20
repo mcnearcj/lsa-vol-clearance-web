@@ -59,4 +59,12 @@ describe('diocesan schools', () => {
     expect(findSchool(' la salle academy ')).toEqual({ name: 'La Salle Academy', city: 'Shillington' })
     expect(findSchool('St. Joseph')).toBeUndefined()
   })
+
+  it('suggests schools by the start of words in their names, not their towns', async () => {
+    const { matchSchools } = await import('./schools')
+    expect(matchSchools('Berks').map((s) => s.name)).toEqual(['Berks Catholic High School'])
+    expect(matchSchools('be').map((s) => s.name)).toEqual(['Berks Catholic High School', 'Bethlehem Catholic High School', 'Notre Dame School of Bethlehem'])
+    expect(matchSchools('saint thomas').map((s) => s.name)).toEqual(['St. Thomas More School'])
+    expect(matchSchools('la salle academy')).toEqual([])
+  })
 })

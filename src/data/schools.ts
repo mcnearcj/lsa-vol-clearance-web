@@ -45,4 +45,23 @@ export const schools: School[] = [
   { name: 'St. Thomas More School', city: 'Allentown' },
 ]
 
+/** Lowercase words, with "Saint" and "St." treated alike. */
+const words = (t: string) =>
+  t
+    .toLowerCase()
+    .replace(/\./g, ' ')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map((w) => (w === 'saint' ? 'st' : w))
+
 export const findSchool = (name: string) => schools.find((s) => s.name.toLowerCase() === name.trim().toLowerCase())
+
+/** Schools whose name has a word starting with each typed word: "berks" finds Berks Catholic High School. */
+export function matchSchools(typed: string): School[] {
+  const want = words(typed)
+  if (!want.length || findSchool(typed)) return []
+  return schools.filter((s) => {
+    const have = words(s.name)
+    return want.every((w) => have.some((h) => h.startsWith(w)))
+  })
+}
