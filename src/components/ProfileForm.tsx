@@ -107,7 +107,7 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
         <legend>Background check questions</legend>
         <p className="used-on">On the Background Check Authorization</p>
         <div className="grid">
-          {choice('residedInPA', 'Lived in Pennsylvania more than a year?', [
+          {choice('residedInPA', 'Lived in PA 1+ year?', [
             ['yes', 'Yes'],
             ['no', 'No'],
           ])}
