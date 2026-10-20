@@ -257,7 +257,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
                 }} />
               <span>
                 My submission checklist
-                <small>A separate page for you: everything to hand in with your forms. Don’t hand it in.</small>
+                <small>Lists the certificates and results to turn in with your forms. It’s just for you to keep.</small>
               </span>
             </label>
           </li>
