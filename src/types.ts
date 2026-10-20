@@ -54,11 +54,17 @@ export type Progress = Record<string, ItemProgress>
 
 export type FormId = 'bgauth' | 'sexabuse' | 'conduct' | 'social' | 'cpsl' | 'nsor'
 
+export type GroupId = 'checks' | 'sign' | 'training' | 'driving'
+
 export interface Requirement {
   id: string
+  /** Number on the diocese's checklist, so coordinators and volunteers can refer to the same item. */
   number: number
+  group: GroupId
   title: string
   summary: string
+  /** How long it takes or how long results take, when the diocese's instructions say. */
+  time?: string
   /** Years the clearance stays valid. Omit for one-time items. */
   validYears?: number
   /** Extra caution shown on the card. */

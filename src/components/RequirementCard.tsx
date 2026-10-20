@@ -1,39 +1,87 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { missingFields } from '../data/formFields'
+import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
 import { saveFile } from '../save'
-import { formatDate, standing, standingLabel, todayISO } from '../dates'
-import type { ItemProgress, Profile, Requirement, Status } from '../types'
+import type { ItemProgress, Profile, Requirement } from '../types'
 
 interface Props {
   req: Requirement
   progress: ItemProgress | undefined
   profile: Profile
   onChange: (p: ItemProgress) => void
-  onNeedProfile: () => void
+  onEditInfo: () => void
+  defaultOpen?: boolean
 }
 
 const loadBytes = async (file: string) => {
   const res = await fetch(`${import.meta.env.BASE_URL}${file}`)
-  if (!res.ok) throw new Error(`Could not load ${file}`)
+  if (!res.ok) throw new Error(`Could not load the blank form (${file}). Check your connection and try again.`)
   return new Uint8Array(await res.arrayBuffer())
 }
 
-export function RequirementCard({ req, progress, profile, onChange, onNeedProfile }: Props) {
-  const [open, setOpen] = useState(false)
+export function StatusIcon({ st }: { st: Standing }) {
+  const common = { width: 26, height: 26, viewBox: '0 0 26 26', 'aria-hidden': true } as const
+  switch (st) {
+    case 'current':
+      return (
+        <svg {...common} className="icon ok">
+          <circle cx="13" cy="13" r="12" fill="currentColor" />
+          <path d="M7.5 13.5l3.5 3.5 7.5-8" fill="none" stroke="var(--on-status)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'expiring':
+    case 'expired':
+      return (
+        <svg {...common} className={`icon ${st === 'expired' ? 'bad' : 'warn'}`}>
+          <circle cx="13" cy="13" r="12" fill="currentColor" />
+          <path d="M13 7v7.5" stroke="var(--on-status)" strokeWidth="2.4" strokeLinecap="round" />
+          <circle cx="13" cy="18.5" r="1.5" fill="var(--on-status)" />
+        </svg>
+      )
+    case 'started':
+      return (
+        <svg {...common} className="icon accent">
+          <circle cx="13" cy="13" r="11" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M13 2a11 11 0 0 1 0 22z" fill="currentColor" />
+        </svg>
+      )
+    case 'na':
+      return (
+        <svg {...common} className="icon muted">
+          <circle cx="13" cy="13" r="11" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M8.5 13h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )
+    default:
+      return (
+        <svg {...common} className="icon muted">
+          <circle cx="13" cy="13" r="11" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      )
+  }
+}
+
+export function RequirementCard({ req, progress, profile, onChange, onEditInfo, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const cur = progress ?? { status: 'todo' as Status }
+  const [missing, setMissing] = useState<string[] | null>(null)
+  const detailsId = useId()
+  const cur: ItemProgress = progress ?? { status: 'todo' }
   const { standing: st, expiresOn } = standing(req, progress)
-  const hasProfile = Boolean(profile.firstName.trim() && profile.lastName.trim())
+  const isDone = cur.status === 'done'
 
-  const setStatus = (status: Status) => {
-    const next: ItemProgress = { ...cur, status }
-    if (status === 'done' && !next.completedOn) next.completedOn = todayISO()
-    onChange(next)
-  }
+  const markDone = () => onChange({ ...cur, status: 'done', completedOn: cur.completedOn || todayISO() })
+  const undo = () => onChange({ ...cur, status: 'todo', completedOn: undefined })
 
-  const generate = async () => {
+  const download = async (force = false) => {
     if (!req.form) return
-    if (!hasProfile) return onNeedProfile()
+    const gaps = missingFields(req.form.id, profile)
+    if (gaps.length && !force) {
+      setMissing(gaps)
+      return
+    }
+    setMissing(null)
     setBusy(true)
     setError('')
     try {
@@ -42,87 +90,152 @@ export function RequirementCard({ req, progress, profile, onChange, onNeedProfil
       await saveFile(filename, bytes, 'application/pdf')
       if (cur.status === 'todo') onChange({ ...cur, status: 'started' })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong making the PDF.')
+      setError(e instanceof Error ? e.message : 'The form could not be made. Try again.')
     } finally {
       setBusy(false)
     }
   }
 
-  return (
-    <li className={`card standing-${st}`}>
-      <div className="card-head">
-        <span className="num" aria-hidden>
-          {req.number}
-        </span>
-        <div className="card-title">
-          <h3>
-            {req.title}
-            {req.optional && <span className="tag">If driving</span>}
-          </h3>
-          <p>{req.summary}</p>
-        </div>
-        <span className={`badge ${st}`}>{standingLabel[st]}</span>
-      </div>
+  const meta = [req.time, req.validYears ? `Renew every ${req.validYears} years` : req.group !== 'driving' ? 'One time' : null].filter(Boolean)
 
-      <div className="card-controls">
-        <label>
-          <span className="sr">Status</span>
-          <select value={cur.status} onChange={(e) => setStatus(e.target.value as Status)}>
-            <option value="todo">Not started</option>
-            <option value="started">In progress</option>
-            <option value="done">Complete</option>
-            {req.optional && <option value="na">Not applicable</option>}
-          </select>
-        </label>
-        {cur.status === 'done' && (
-          <label className="date">
-            <span>{req.validYears ? 'Completed on' : 'Date signed / completed'}</span>
-            <input type="date" value={cur.completedOn ?? ''} onChange={(e) => onChange({ ...cur, completedOn: e.target.value })} />
+  return (
+    <li className={`card st-${st}${open ? ' open' : ''}`}>
+      <button className="card-head" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={detailsId}>
+        <StatusIcon st={st} />
+        <span className="card-title">
+          <span className="eyebrow">Checklist #{req.number}</span>
+          <span className="title">{req.title}</span>
+          <span className="summary">{req.summary}</span>
+          {meta.length > 0 && <span className="meta">{meta.join(' · ')}</span>}
+        </span>
+        <span className="chev" aria-hidden>
+          ›
+        </span>
+      </button>
+
+      <div className="card-status">
+        <span className={`badge ${st}`}>{standingLabel[st]}</span>
+        {isDone && (
+          <label className="done-date">
+            <span>{req.validYears ? 'Completed' : 'Done'}</span>
+            <input
+              type="date"
+              value={cur.completedOn ?? ''}
+              max={todayISO()}
+              onChange={(e) => onChange({ ...cur, completedOn: e.target.value })}
+              aria-label={`Date completed for ${req.title}`}
+            />
           </label>
         )}
-        {expiresOn && (
-          <span className="expires">
-            {st === 'expired' ? 'Expired' : 'Renew by'} {formatDate(expiresOn)}
-          </span>
+        {expiresOn && <span className={`renew ${st}`}>{st === 'expired' ? 'Expired' : 'Renew by'} {formatDate(expiresOn)}</span>}
+        <span className="spacer" />
+        {cur.status === 'na' ? (
+          <button className="ghost" onClick={undo}>
+            This applies to me
+          </button>
+        ) : isDone ? (
+          <button className="ghost" onClick={undo}>
+            Undo
+          </button>
+        ) : (
+          <button className="secondary" onClick={markDone}>
+            Mark done
+          </button>
         )}
-        <button className="link" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {open ? 'Hide steps' : 'Show steps'}
-        </button>
       </div>
 
-      {open && (
-        <div className="details">
-          {req.note && <p className="callout">{req.note}</p>}
-          <ol>
-            {req.steps.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-          <div className="actions">
-            {req.form && (
-              <button className="primary" onClick={generate} disabled={busy}>
-                {busy ? 'Making PDF…' : `Fill in & download: ${req.form.label}`}
-              </button>
+      <div className="details" id={detailsId} hidden={!open}>
+        {req.note && <p className="callout">{req.note}</p>}
+
+        {req.form && (
+          <div className="form-box">
+            <div>
+              <strong>{req.form.label}</strong>
+              <p>Filled in with your info. Print it, then sign and date it by hand.</p>
+            </div>
+            <button className="primary" onClick={() => void download()} disabled={busy}>
+              {busy ? 'Making your form…' : 'Download filled-in form'}
+            </button>
+            {missing && (
+              <div className="missing" role="alert">
+                <p>
+                  These will be blank on the form: <strong>{missing.join(', ')}</strong>.
+                </p>
+                <div className="row">
+                  <button className="secondary" onClick={onEditInfo}>
+                    Add them in My info
+                  </button>
+                  <button className="ghost" onClick={() => void download(true)}>
+                    Download anyway
+                  </button>
+                </div>
+              </div>
             )}
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
+
+        <h4>Steps</h4>
+        <ol className="steps">
+          {req.steps.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ol>
+
+        {(req.links.length > 0 || req.references?.length) && (
+          <ul className="links">
             {req.links.map((l) => (
-              <a key={l.href} href={l.href} target="_blank" rel="noreferrer noopener">
-                {l.label} ↗
-              </a>
+              <li key={l.href}>
+                <a href={l.href} target="_blank" rel="noreferrer noopener">
+                  {l.label}
+                  <span className="ext" aria-label="(opens in a new tab)">
+                    ↗
+                  </span>
+                </a>
+              </li>
             ))}
             {req.references?.map((r) => (
-              <a key={r.file} href={`${import.meta.env.BASE_URL}${r.file}`} target="_blank" rel="noreferrer noopener">
-                {r.label} (PDF) ↗
-              </a>
+              <li key={r.file}>
+                <a href={`${import.meta.env.BASE_URL}${r.file}`} target="_blank" rel="noreferrer noopener">
+                  {r.label} (PDF)
+                  <span className="ext" aria-label="(opens in a new tab)">
+                    ↗
+                  </span>
+                </a>
+              </li>
             ))}
-          </div>
-          {req.form && !hasProfile && <p className="hint">Add your name under “My info” first so the form can be filled in.</p>}
-          {error && <p className="error">{error}</p>}
+          </ul>
+        )}
+
+        <div className="card-foot">
           <label className="notes">
-            <span>Notes (receipt number, who you gave it to…)</span>
-            <textarea rows={2} value={cur.notes ?? ''} onChange={(e) => onChange({ ...cur, notes: e.target.value })} />
+            <span>Your notes</span>
+            <textarea
+              rows={2}
+              placeholder="Receipt or application number, who you gave it to…"
+              value={cur.notes ?? ''}
+              onChange={(e) => onChange({ ...cur, notes: e.target.value })}
+            />
           </label>
+          <div className="row">
+            {cur.status === 'todo' && (
+              <button className="ghost" onClick={() => onChange({ ...cur, status: 'started' })}>
+                Mark as started
+              </button>
+            )}
+            {req.optional && cur.status !== 'na' && (
+              <button className="ghost" onClick={() => onChange({ ...cur, status: 'na', completedOn: undefined })}>
+                Doesn’t apply to me
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </li>
   )
 }
+

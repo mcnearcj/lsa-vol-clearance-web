@@ -2,38 +2,67 @@ import { useRef, useState } from 'react'
 import { CloudPanel } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
-import { requirements } from './data/requirements'
-import { standing } from './dates'
+import { allFormFields } from './data/formFields'
+import { groups, orderedRequirements } from './data/requirements'
+import { standing, type Standing } from './dates'
 import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, type Progress, type Profile } from './types'
 
-type Tab = 'checklist' | 'info' | 'cloud' | 'about'
+type Tab = 'checklist' | 'info' | 'backup' | 'help'
+
+const tabs: [Tab, string][] = [
+  ['checklist', 'Checklist'],
+  ['info', 'My info'],
+  ['backup', 'Backup'],
+  ['help', 'Help'],
+]
+
+/** Email links from the sign-in service land with details in the hash; open the Backup tab for them. */
+const initialTab = (): Tab => (/(access_token|error_description|type=recovery)/.test(window.location.hash) ? 'backup' : 'checklist')
+
+const asset = (file: string) => `${import.meta.env.BASE_URL}${file}`
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('checklist')
+  const [tab, setTabState] = useState<Tab>(initialTab)
   const [profile, setProfile] = useStored<Profile>('profile', emptyProfile)
   const [progress, setProgress] = useStored<Progress>('progress', {})
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const counted = requirements.filter((r) => standing(r, progress[r.id]).standing !== 'na')
-  const complete = counted.filter((r) => ['current', 'expiring'].includes(standing(r, progress[r.id]).standing)).length
-  const needsAttention = counted.filter((r) => ['expiring', 'expired'].includes(standing(r, progress[r.id]).standing))
-  const pct = counted.length ? Math.round((complete / counted.length) * 100) : 0
-
+  const [ui, setUi] = useStored('ui', { introDismissed: false })
   const [message, setMessage] = useState('')
   const [confirmErase, setConfirmErase] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  const exportBackup = () => void saveFile('volunteer-clearance-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
+  const setTab = (t: Tab) => {
+    setTabState(t)
+    window.scrollTo({ top: 0 })
+  }
+
+  const st = (id: string) => standing(orderedRequirements.find((r) => r.id === id)!, progress[id]).standing
+  const counted = orderedRequirements.filter((r) => st(r.id) !== 'na')
+  const doneCount = counted.filter((r) => ['current', 'expiring'].includes(st(r.id))).length
+  const renew = counted.filter((r) => ['expiring', 'expired'].includes(st(r.id))).length
+  const allDone = counted.length > 0 && doneCount === counted.length && renew === 0
+  const pct = counted.length ? Math.round((doneCount / counted.length) * 100) : 0
+
+  // The most useful thing to do next: anything expired, then anything started, then the first not started, then anything expiring.
+  const nextUp = (['expired', 'started', 'todo', 'expiring'] as Standing[])
+    .map((s) => orderedRequirements.find((r) => st(r.id) === s))
+    .find(Boolean)
+
+  const infoFilled = allFormFields.filter((k) => String(profile[k]).trim()).length
+  const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
+
+  const exportBackup = () => void saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
   const importBackup = async (file: File) => {
     try {
       const data = JSON.parse(await file.text())
+      if (!data.profile && !data.progress) throw new Error()
       if (data.profile) setProfile({ ...emptyProfile, ...data.profile })
       if (data.progress) setProgress(data.progress)
-      setMessage('Backup restored.')
+      setMessage('Backup restored. Your info and checklist are back.')
     } catch {
-      setMessage('That file could not be read as a backup.')
+      setMessage('That file isn’t a backup from this site. Choose the .json file you downloaded here.')
     }
   }
 
@@ -41,24 +70,20 @@ export default function App() {
     clearAllStored()
     setProfile(emptyProfile)
     setProgress({})
+    setUi({ introDismissed: false })
     setConfirmErase(false)
-    setMessage('Your data was erased from this browser.')
+    setMessage('Everything was erased from this device.')
   }
 
   return (
     <div className="app">
-      <header>
-        <h1>Volunteer Clearance Tracker</h1>
-        <p>Diocese of Allentown Safe Environment requirements</p>
-        <nav role="tablist">
-          {(
-            [
-              ['checklist', 'Checklist'],
-              ['info', 'My info'],
-              ['cloud', 'Cloud backup'],
-              ['about', 'About & privacy'],
-            ] as const
-          ).map(([id, label]) => (
+      <header className="masthead">
+        <div className="masthead-inner">
+          <p className="kicker">Diocese of Allentown · Safe Environment</p>
+          <h1>Volunteer Clearances</h1>
+        </div>
+        <nav className="tabs" role="tablist" aria-label="Sections">
+          {tabs.map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
               {label}
             </button>
@@ -69,42 +94,118 @@ export default function App() {
       <main>
         {tab === 'checklist' && (
           <>
-            <section className="summary" aria-live="polite">
-              <div className="bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <section className="overview" aria-label="Your progress">
+              <div className="overview-top">
+                <div>
+                  <p className="big">
+                    {doneCount}
+                    <span> of {counted.length} done</span>
+                  </p>
+                  {renew > 0 && <p className="warn-text">{renew === 1 ? '1 item needs renewing' : `${renew} items need renewing`}</p>}
+                </div>
+                {!hasName && (
+                  <button className="secondary" onClick={() => setTab('info')}>
+                    Add my info
+                  </button>
+                )}
+              </div>
+              <div className="bar" role="progressbar" aria-label="Checklist progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                 <div style={{ width: `${pct}%` }} />
               </div>
-              <p>
-                <strong>
-                  {complete} of {counted.length}
-                </strong>{' '}
-                requirements complete
-                {needsAttention.length > 0 && (
-                  <>
-                    {' · '}
-                    <span className="warn">{needsAttention.length} need renewing</span>
-                  </>
-                )}
-              </p>
             </section>
-            <ul className="cards">
-              {requirements.map((r) => (
-                <RequirementCard
-                  key={r.id}
-                  req={r}
-                  progress={progress[r.id]}
-                  profile={profile}
-                  onChange={(p) => setProgress({ ...progress, [r.id]: p })}
-                  onNeedProfile={() => setTab('info')}
-                />
-              ))}
-            </ul>
+
+            {!ui.introDismissed && (
+              <section className="intro" aria-labelledby="intro-h">
+                <div className="intro-head">
+                  <h2 id="intro-h">Start here</h2>
+                  <button className="ghost small-btn" onClick={() => setUi({ introDismissed: true })}>
+                    Hide
+                  </button>
+                </div>
+                <ol>
+                  <li>
+                    <strong>Add your info once.</strong> The site fills it into your forms.{' '}
+                    <button className="link" onClick={() => setTab('info')}>
+                      {infoFilled ? `My info (${infoFilled} of ${allFormFields.length} filled)` : 'Go to My info'}
+                    </button>
+                  </li>
+                  <li>
+                    <strong>Start the background checks early.</strong> Some take 2–3 weeks to come back.
+                  </li>
+                  <li>
+                    <strong>Download, print and sign the forms.</strong> Each one is filled in for you.
+                  </li>
+                  <li>
+                    <strong>Give everything to your Local Safe Environment Coordinator</strong> (LSEC) at your parish or school.
+                  </li>
+                </ol>
+                <p className="small">Your info stays on this device unless you turn on online backup.</p>
+              </section>
+            )}
+
+            {allDone ? (
+              <section className="next all-done">
+                <h2>You’re all set</h2>
+                <p>Every requirement is complete. Come back when one is close to its renewal date.</p>
+              </section>
+            ) : (
+              nextUp && (
+                <section className="next" aria-labelledby="next-h">
+                  <h2 id="next-h">Next up</h2>
+                  <ul className="cards">
+                    <RequirementCard
+                      key={`next-${nextUp.id}`}
+                      req={nextUp}
+                      progress={progress[nextUp.id]}
+                      profile={profile}
+                      onChange={(p) => setProgress({ ...progress, [nextUp.id]: p })}
+                      onEditInfo={() => setTab('info')}
+                      defaultOpen
+                    />
+                  </ul>
+                </section>
+              )
+            )}
+
+            {groups.map((g) => {
+              const items = orderedRequirements.filter((r) => r.group === g.id)
+              const gDone = items.filter((r) => ['current', 'expiring', 'na'].includes(st(r.id))).length
+              return (
+                <section key={g.id} className="group" aria-labelledby={`g-${g.id}`}>
+                  <div className="group-head">
+                    <h2 id={`g-${g.id}`}>{g.title}</h2>
+                    <span className="count">
+                      {gDone}/{items.length}
+                    </span>
+                  </div>
+                  <p className="group-intro">{g.intro}</p>
+                  <ul className="cards">
+                    {items.map((r) => (
+                      <RequirementCard
+                        key={r.id}
+                        req={r}
+                        progress={progress[r.id]}
+                        profile={profile}
+                        onChange={(p) => setProgress({ ...progress, [r.id]: p })}
+                        onEditInfo={() => setTab('info')}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
           </>
         )}
 
-        {tab === 'info' && <ProfileForm profile={profile} onChange={setProfile} />}
+        {tab === 'info' && <ProfileForm profile={profile} onChange={setProfile} onDone={() => setTab('checklist')} />}
 
-        {/* Stays mounted so an unlocked cloud session survives switching tabs. */}
-        <div hidden={tab !== 'cloud'}>
+        <div hidden={tab !== 'backup'}>
+          <div className="page-intro">
+            <h2>Backup</h2>
+            <p>Your info and checklist are saved in this browser. Back them up so you don’t lose them if you clear your browser or switch devices.</p>
+          </div>
+
+          {/* Stays mounted so an unlocked online backup survives switching tabs. */}
           <CloudPanel
             profile={profile}
             progress={progress}
@@ -113,29 +214,21 @@ export default function App() {
               setProgress(d.progress ?? {})
             }}
           />
-        </div>
 
-        {tab === 'about' && (
-          <section className="about">
-            <h2>How this works</h2>
-            <p>
-              This site follows the Diocese of Allentown’s Safe Environment Parish &amp; School Volunteer Requirements Checklist. Tick off each item, record the date, and it will tell you when a clearance is due to be renewed (every 5 years for most). For items with a form, it fills in your details and gives you a PDF to print, sign, and hand to your Local Safe Environment Coordinator.
-            </p>
-            <h2>Your privacy</h2>
-            <ul>
-              <li>Your information is saved in this browser on this device. Nothing is sent anywhere unless you turn on Cloud backup, which uploads an encrypted copy only you can unlock.</li>
-              <li>PDFs are filled in on your device. Nothing is uploaded.</li>
-              <li>The site never asks for or stores your Social Security Number. Write it on the printed forms by hand where required.</li>
-              <li>Clearing your browser data, or using another device, means starting over. Use the backup below to move your progress.</li>
-              <li>This is not an official diocesan site. Always confirm requirements with your Local Safe Environment Coordinator.</li>
-            </ul>
-            <div className="actions">
-              <button onClick={exportBackup}>Download backup</button>
-              <button onClick={() => fileRef.current?.click()}>Restore from backup</button>
+          <section className="panel">
+            <h3>Backup file</h3>
+            <p>No account needed. Download a file and keep it somewhere private. It contains your name, address and the other details you entered.</p>
+            <div className="row">
+              <button className="secondary" onClick={exportBackup}>
+                Download backup file
+              </button>
+              <button className="ghost" onClick={() => fileRef.current?.click()}>
+                Restore from a file
+              </button>
               <input
                 ref={fileRef}
                 type="file"
-                accept="application/json"
+                accept="application/json,.json"
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0]
@@ -143,29 +236,96 @@ export default function App() {
                   e.target.value = ''
                 }}
               />
-              {confirmErase ? (
-                <>
-                  <button className="danger" onClick={eraseAll}>
-                    Yes, erase everything
-                  </button>
-                  <button onClick={() => setConfirmErase(false)}>Cancel</button>
-                </>
-              ) : (
-                <button className="danger" onClick={() => setConfirmErase(true)}>
-                  Erase my data
-                </button>
-              )}
             </div>
-            {message && <p role="status">{message}</p>}
-            <p className="small">
-              The backup file contains the information you entered (name, address, etc.). Keep it somewhere private.{' '}
-              <a href={`${import.meta.env.BASE_URL}forms/requirements-checklist.pdf`} target="_blank" rel="noreferrer noopener">
-                Official checklist (PDF)
-              </a>
-            </p>
+            {message && tab === 'backup' && (
+              <p className="notice ok" role="status">
+                {message}
+              </p>
+            )}
           </section>
+        </div>
+
+        {tab === 'help' && (
+          <div className="help">
+            <div className="page-intro">
+              <h2>Help</h2>
+              <p>
+                This site follows the diocese’s{' '}
+                <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
+                  Parish &amp; School Volunteer Requirements Checklist (PDF)
+                </a>
+                . It’s a helper, not an official diocesan site. Your coordinator has the final word on what you need.
+              </p>
+            </div>
+
+            <section className="panel">
+              <h3>Who to ask</h3>
+              <p>
+                Start with the <strong>Local Safe Environment Coordinator (LSEC)</strong> at your parish or school, or your CYO representative. They give out payment codes for the background checks and collect your finished paperwork.
+              </p>
+              <p>For questions they can’t answer, the diocese’s contact on its forms is:</p>
+              <address>
+                Janice Woolley, Background Check / Audit &amp; Training Supervisor
+                <br />
+                Diocese of Allentown, PO Box F, Allentown, PA 18105-1538
+                <br />
+                610-871-5200 ext. 2258 · <span className="select">jwoolley@allentowndiocese.org</span>
+              </address>
+            </section>
+
+            <section className="panel report">
+              <h3>To report suspected child abuse</h3>
+              <p>
+                If a child is in immediate danger, <strong>call 911</strong>. Otherwise call the PA ChildLine, 24 hours a day: <strong className="select">1-800-932-0313</strong>. Then follow the diocese’s CPSL policy (Checklist #9) to tell your pastor or principal.
+              </p>
+            </section>
+
+            <section className="panel">
+              <h3>Questions</h3>
+              <dl className="faq">
+                <dt>Do I need to do all 12?</dt>
+                <dd>Everyone who may have contact with children needs all of them except the Motor Vehicle Report, which is only for people who drive for the parish or school. The FBI fingerprint check is for volunteers 18 and older.</dd>
+                <dt>How often do I renew?</dt>
+                <dd>Background checks and the Mandated Reporter training last 5 years. Mark an item done with the date you completed it and the site shows its renewal date. Protecting God’s Children is a one-time training.</dd>
+                <dt>Why isn’t my Social Security Number on the forms?</dt>
+                <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
+                <dt>Where is my information kept?</dt>
+                <dd>In this browser on this device. Forms are filled in on your device too. Nothing is uploaded unless you turn on online backup, which scrambles your info with a passphrase only you know.</dd>
+              </dl>
+            </section>
+
+            <section className="panel">
+              <h3>Erase my data</h3>
+              <p>Removes your info and checklist from this browser. It doesn’t delete an online backup; do that on the Backup page.</p>
+              <div className="row">
+                {confirmErase ? (
+                  <>
+                    <button className="danger" onClick={eraseAll}>
+                      Yes, erase everything
+                    </button>
+                    <button className="ghost" onClick={() => setConfirmErase(false)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button className="ghost danger-text" onClick={() => setConfirmErase(true)}>
+                    Erase my data from this device
+                  </button>
+                )}
+              </div>
+              {message && tab === 'help' && (
+                <p className="notice ok" role="status">
+                  {message}
+                </p>
+              )}
+            </section>
+          </div>
         )}
       </main>
+
+      <footer className="foot">
+        <p>Not an official Diocese of Allentown website. Requirements from the diocese’s checklist revised 2/14/2023.</p>
+      </footer>
     </div>
   )
 }

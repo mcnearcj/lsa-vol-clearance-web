@@ -1,4 +1,4 @@
-import type { Requirement } from '../types'
+import type { GroupId, Requirement } from '../types'
 
 // Source: "Safe Environment Parish & School Volunteer Requirements Checklist" (Diocese of Allentown, rev. 2/14/2023)
 // plus the diocese's step-by-step instruction sheets. Keep this in sync with those documents.
@@ -9,8 +9,9 @@ export const requirements: Requirement[] = [
   {
     id: 'patch',
     number: 1,
+    group: 'checks',
     title: 'PA State Police Criminal Record Check (PATCH)',
-    summary: 'Pennsylvania Access to Criminal History check. Must be less than one year old; recheck every 5 years.',
+    summary: 'Pennsylvania State Police record check, done online. Must be less than a year old when you hand it in.',
     validYears: 5,
     links: [{ label: 'Pennsylvania Access To Criminal History (PATCH)', href: 'https://epatch.state.pa.us/' }],
     steps: [
@@ -23,8 +24,10 @@ export const requirements: Requirement[] = [
   {
     id: 'childabuse',
     number: 2,
+    group: 'checks',
     title: 'PA Child Abuse History Certificate',
-    summary: 'Recheck every 5 years. A free check is available every 57 months with a payment code.',
+    summary: 'Apply online through the state’s child welfare portal.',
+    time: 'Results in about 2–3 weeks',
     validYears: 5,
     links: [{ label: 'PA Child Welfare Portal (Compass)', href: 'https://www.compass.state.pa.us/cwis/public/home' }],
     steps: [
@@ -47,8 +50,10 @@ export const requirements: Requirement[] = [
   {
     id: 'fbi',
     number: 3,
+    group: 'checks',
     title: 'FBI Criminal (DHS) Fingerprint Background Check',
-    summary: 'Age 18+. Must be less than one year old; recheck every 5 years.',
+    summary: 'Fingerprinting appointment for volunteers 18 and older. Must be less than a year old when you hand it in.',
+    time: 'Results about 2 weeks after fingerprinting',
     validYears: 5,
     links: [{ label: 'IdentoGO registration', href: 'https://uenroll.identogo.com' }],
     steps: [
@@ -66,8 +71,10 @@ export const requirements: Requirement[] = [
   {
     id: 'sexabuse',
     number: 4,
+    group: 'sign',
     title: 'Sexual Abuse Policy Acknowledgment (2022)',
-    summary: 'Read the 2022 Diocese of Allentown Policies and Procedures Regarding Alleged Sexual Abuse, then sign the acknowledgment.',
+    summary: 'Read the 2022 policy, then sign the acknowledgment.',
+    time: 'A few minutes',
     links: [
       { label: 'Read the policy', href: 'https://www.allentowndiocese.org/sites/default/files/2023-01/SexualAbusePolicy2022.pdf' },
     ],
@@ -81,8 +88,10 @@ export const requirements: Requirement[] = [
   {
     id: 'conduct',
     number: 5,
+    group: 'sign',
     title: 'Code of Conduct Acknowledgment (2022)',
-    summary: 'Read the 2022 Diocese of Allentown Code of Conduct, then sign the acknowledgment.',
+    summary: 'Read the 2022 Code of Conduct, then sign the acknowledgment.',
+    time: 'A few minutes',
     links: [
       { label: 'Read the policy', href: 'https://www.allentowndiocese.org/sites/default/files/2023-01/CodeofConduct2022.pdf' },
     ],
@@ -96,8 +105,10 @@ export const requirements: Requirement[] = [
   {
     id: 'social',
     number: 6,
+    group: 'sign',
     title: 'Social Media & Electronic Communications Acknowledgment',
-    summary: 'Read the Social Media and Electronic Communications Policies, then sign the acknowledgment and consent form.',
+    summary: 'Read the social media policy, then sign the consent form.',
+    time: 'A few minutes',
     links: [
       {
         label: 'Read the policy',
@@ -115,8 +126,9 @@ export const requirements: Requirement[] = [
   {
     id: 'pgc',
     number: 7,
+    group: 'training',
     title: 'Protecting God’s Children Certificate',
-    summary: 'Virtual training with videos and questions. Only needs to be done once.',
+    summary: 'Online VIRTUS training. Only needed once.',
     links: [{ label: 'VIRTUS online', href: 'https://www.virtusonline.org/virtus/' }],
     steps: [
       'Go to VIRTUS online and select “First-Time Registrant” → “Begin the registration process”.',
@@ -134,8 +146,10 @@ export const requirements: Requirement[] = [
   {
     id: 'mandated',
     number: 8,
+    group: 'training',
     title: 'Mandated Reporter Training Certificate',
-    summary: 'Good for 5 years. At least 3 hours. Required for all clergy, employees and volunteers who interact with children.',
+    summary: 'Online course on recognizing and reporting child abuse.',
+    time: '3 hours or more',
     validYears: 5,
     links: [
       { label: 'University of Pittsburgh (reportabusepa.pitt.edu)', href: 'https://www.reportabusepa.pitt.edu/PublicStudentSignUp.aspx' },
@@ -152,8 +166,10 @@ export const requirements: Requirement[] = [
   {
     id: 'cpsl',
     number: 9,
+    group: 'sign',
     title: 'Child Protective Services Law (CPSL) Acknowledgment',
-    summary: 'Review the Diocese’s Child Protective Services Law Policy and sign the acknowledgment form.',
+    summary: 'Read the Child Protective Services Law policy, then sign.',
+    time: 'A few minutes',
     links: [],
     steps: [
       'Read the Child Protective Services Law policy and the flow chart for mandated reporters (open the original document below).',
@@ -166,8 +182,10 @@ export const requirements: Requirement[] = [
   {
     id: 'bgauth',
     number: 10,
+    group: 'sign',
     title: 'Signed Background Check Authorization Form',
-    summary: 'Authorizes the Diocese to run the criminal background check, SSN verification, FBI fingerprinting and (if applicable) motor vehicle check.',
+    summary: 'Gives the diocese permission to run your background checks.',
+    time: 'A few minutes',
     note: 'Social Security Number is for employees only and is never entered or stored by this site.',
     links: [],
     steps: [
@@ -180,8 +198,9 @@ export const requirements: Requirement[] = [
   {
     id: 'mvr',
     number: 11,
+    group: 'driving',
     title: 'Motor Vehicle Report',
-    summary: 'Only if you drive on behalf of a Diocesan location.',
+    summary: 'Only if you drive on behalf of your parish or school.',
     optional: true,
     links: [],
     steps: [
@@ -193,8 +212,10 @@ export const requirements: Requirement[] = [
   {
     id: 'nsor',
     number: 12,
+    group: 'checks',
     title: 'National Sex Offender Registry (NSOR) Check',
-    summary: 'Must be less than a year old and completed every 5 years. No fee. Processing takes about 14 days.',
+    summary: 'Mail or email a one-page application to the state. Free. Must be less than a year old when you hand it in.',
+    time: 'Processing takes about 14 days',
     validYears: 5,
     note: 'Social Security Number is left blank on the generated form. Write it in by hand; this site never stores it.',
     links: [
@@ -212,3 +233,29 @@ export const requirements: Requirement[] = [
     form: { id: 'nsor', label: 'NSOR Application' },
   },
 ]
+
+export const groups: { id: GroupId; title: string; intro: string }[] = [
+  {
+    id: 'checks',
+    title: 'Background checks',
+    intro: 'Start these first. Some take a few weeks to come back. Ask your coordinator for any payment codes you need.',
+  },
+  {
+    id: 'sign',
+    title: 'Read and sign',
+    intro: 'Read each policy, download your filled-in form, then print, sign and date it by hand.',
+  },
+  {
+    id: 'training',
+    title: 'Training',
+    intro: 'Online courses. Print or save each certificate when you finish.',
+  },
+  {
+    id: 'driving',
+    title: 'Only if you drive',
+    intro: 'Skip this if you will not drive for your parish or school.',
+  },
+]
+
+/** Requirements in the order the site shows them: grouped, then by the diocese's number. */
+export const orderedRequirements: Requirement[] = groups.flatMap((g) => requirements.filter((r) => r.group === g.id))
