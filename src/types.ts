@@ -79,3 +79,6 @@ export interface Requirement {
   /** Reference PDFs from the diocese (instructions, originals). */
   references?: { label: string; file: string }[]
 }
+
+/** The name to show for whose info is loaded, or '' if none has been entered. */
+export const personName = (p: Profile) => [p.firstName, p.lastName].map((s) => s.trim()).filter(Boolean).join(' ')

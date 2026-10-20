@@ -362,3 +362,14 @@ address { font-style: normal; background: var(--surface-2); border-radius: 10px;
   .profile fieldset { padding: 12px 14px 16px; }
   .form-box .primary { width: 100%; }
 }
+
+/* Whose info is on this device: shown on every page, for shared computers. */
+.person { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
+.person > p { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.95rem; }
+.person > p > span:nth-child(2) { flex: 1; min-width: 0; }
+.person .link { font-weight: 600; }
+.person.confirming { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--band); color: var(--band-text); font-weight: 700; font-size: 0.9rem; }
+.person-sub { color: var(--muted); }
+.switch { display: flex; flex-direction: column; gap: 10px; font-size: 0.93rem; }
+.who { color: var(--text); }

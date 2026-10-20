@@ -23,7 +23,7 @@ interface Props {
   profile: Profile
   progress: Progress
   onRestore: (data: { profile: Profile; progress: Progress }) => void
-  onStatus?: (status: SyncStatus, savedAt: string | null) => void
+  onStatus?: (status: SyncStatus, savedAt: string | null, email: string | null) => void
   /** Changes when the person erases their data on this device; signs out so an empty device is never backed up. */
   resetToken?: number
 }
@@ -391,8 +391,8 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
                 ? 'saved'
                 : 'manual'
   useEffect(() => {
-    onStatus?.(status, cloudTime)
-  }, [status, cloudTime, onStatus])
+    onStatus?.(status, cloudTime, user?.email ?? null)
+  }, [status, cloudTime, user, onStatus])
 
   if (!cloudConfigured) {
     return (

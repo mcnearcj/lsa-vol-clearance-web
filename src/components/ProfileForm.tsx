@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { allFormFields } from '../data/formFields'
-import type { Profile } from '../types'
+import { personName, type Profile } from '../types'
 
 interface Props {
   profile: Profile
@@ -38,7 +38,7 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
   return (
     <form className="profile" onSubmit={(e) => e.preventDefault()} autoComplete="on">
       <div className="page-intro">
-        <h2>My info</h2>
+        <h2>{personName(profile) ? `My info: ${personName(profile)}` : 'My info'}</h2>
         <p>Enter this once and the site fills it into your forms. It saves automatically on this device as you type.</p>
         <div className="meter" aria-live="polite">
           <div className="bar" role="progressbar" aria-label="Details filled in" aria-valuenow={filled} aria-valuemin={0} aria-valuemax={total}>

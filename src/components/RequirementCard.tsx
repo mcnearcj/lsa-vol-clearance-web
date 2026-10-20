@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { missingFields } from '../data/formFields'
 import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
 import { saveFile } from '../save'
-import type { ItemProgress, Profile, Requirement } from '../types'
+import { personName, type ItemProgress, type Profile, type Requirement } from '../types'
 
 interface Props {
   req: Requirement
@@ -151,7 +151,16 @@ export function RequirementCard({ req, progress, profile, onChange, onEditInfo, 
           <div className="form-box">
             <div>
               <strong>{req.form.label}</strong>
-              <p>Filled in with your info. Print it, then sign and date it by hand.</p>
+              <p>
+                {personName(profile) ? (
+                  <>
+                    Filled in for <strong className="who">{personName(profile)}</strong>.
+                  </>
+                ) : (
+                  'Filled in with the info on this device.'
+                )}{' '}
+                Print it, then sign and date it by hand.
+              </p>
             </div>
             <button className="primary" onClick={() => void download()} disabled={busy}>
               {busy ? 'Making your form…' : 'Download filled-in form'}

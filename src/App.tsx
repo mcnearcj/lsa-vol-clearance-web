@@ -9,7 +9,7 @@ import { site } from './data/site'
 import { standing, type Standing } from './dates'
 import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
-import { emptyProfile, type Progress, type Profile } from './types'
+import { emptyProfile, personName, type Progress, type Profile } from './types'
 
 type Tab = 'checklist' | 'info' | 'sync' | 'help'
 
@@ -62,10 +62,14 @@ export default function App() {
   const [confirmErase, setConfirmErase] = useState(false)
   const [sync, setSync] = useState<SyncStatus>('unavailable')
   const [syncAt, setSyncAt] = useState<string | null>(null)
+  const [syncEmail, setSyncEmail] = useState<string | null>(null)
+  const [confirmSwitch, setConfirmSwitch] = useState(false)
+  const [cleared, setCleared] = useState(false)
   const [resetToken, setResetToken] = useState(0)
-  const onSyncStatus = useCallback((s: SyncStatus, at: string | null) => {
+  const onSyncStatus = useCallback((s: SyncStatus, at: string | null, email: string | null) => {
     setSync(s)
     setSyncAt(at)
+    setSyncEmail(email)
   }, [])
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -106,6 +110,8 @@ export default function App() {
 
   const infoFilled = allFormFields.filter((k) => String(profile[k]).trim()).length
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
+  const who = personName(profile)
+  const hasData = Boolean(who) || Object.keys(progress).length > 0
 
   const exportBackup = () => saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
@@ -128,6 +134,8 @@ export default function App() {
     setUi({ introDismissed: false })
     setResetToken((n) => n + 1)
     setConfirmErase(false)
+    setConfirmSwitch(false)
+    setCleared(true)
     setMessage('Everything was erased from this device.')
   }
 
@@ -158,6 +166,52 @@ export default function App() {
       </div>
 
       <main>
+        {cleared && !hasData && !syncEmail && (
+          <p className="notice ok" role="status">
+            This computer is cleared. No one’s info is loaded. Add your own under My info.
+          </p>
+        )}
+
+        {(hasData || syncEmail) && (
+          <section className={`person${confirmSwitch ? ' confirming' : ''}`} aria-label="Whose info is on this device">
+            <p>
+              <span className="avatar" aria-hidden>
+                {(who || syncEmail || '?').slice(0, 1).toUpperCase()}
+              </span>
+              <span>
+                {who ? (
+                  <>
+                    Showing info for <strong>{who}</strong>
+                  </>
+                ) : (
+                  <>Showing a checklist with no name yet</>
+                )}
+                {syncEmail && <span className="person-sub"> · Synced as {syncEmail}</span>}
+              </span>
+              {!confirmSwitch && (
+                <button className="link" onClick={() => setConfirmSwitch(true)}>
+                  Not you?
+                </button>
+              )}
+            </p>
+            {confirmSwitch && (
+              <div className="switch">
+                <p>
+                  Clear {who ? `${who}’s` : 'this'} info and checklist from this computer so you can start your own? {syncEmail ? 'Their synced copy stays safe online, and they’ll be signed out here.' : 'If it isn’t backed up, it can’t be recovered.'}
+                </p>
+                <div className="row">
+                  <button className="danger" onClick={eraseAll}>
+                    Clear and start fresh
+                  </button>
+                  <button className="ghost" onClick={() => setConfirmSwitch(false)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         {tab === 'checklist' && (
           <>
             <section className="overview" aria-label="Your progress">
@@ -382,6 +436,10 @@ export default function App() {
                 <dt>Why did my sign-in email come from Supabase?</dt>
                 <dd>
                   Supabase is the service this site uses to run accounts and store synced copies. Confirmation and password reset emails come from Supabase Auth (noreply@mail.app.supabase.io). They’re safe to open. If you don’t see one, check your spam folder.
+                </dd>
+                <dt>I’m using a shared computer. Is that OK?</dt>
+                <dd>
+                  Yes, but your info is saved on this computer until you clear it. Check the name at the top of each page. When you’re done, sign in to Sync so your progress is saved, then choose “Not you?” or “Erase my data” below to clear this computer. If you see someone else’s name, choose “Not you?” to start fresh.
                 </dd>
                 <dt>Who made this, and how does it work?</dt>
                 <dd>
