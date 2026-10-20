@@ -400,18 +400,18 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
 
       <div className="row">
         <button className="primary" onClick={() => void prepare()} disabled={busy || !ready}>
-          {busy ? 'Making your files…' : files.length ? 'Make them again' : 'Make my files'}
+          {busy ? 'Generating your documents…' : files.length ? 'Generate them again' : 'Generate my documents'}
         </button>
         {nothingChosen && <span className="small">Choose at least one item.</span>}
       </div>
 
       {files.length > 0 && (
         <div className="ready" role="status">
-          <h4>Your files are ready</h4>
+          <h4>Your documents are ready</h4>
           {madeMissing.length > 0 && (
             <div className="missing" role="alert">
               <p>
-                Some info was missing, so these are blank on your forms: <strong>{madeMissing.join(', ')}</strong>. Write them in by hand, or add them in My info and make the files again.
+                Some info was missing, so these are blank on your forms: <strong>{madeMissing.join(', ')}</strong>. Write them in by hand, or add them in My info and generate your documents again.
               </p>
               <div className="row">
                 <button type="button" className="secondary" onClick={onEditInfo}>
