@@ -5,6 +5,7 @@ import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { allFormFields } from './data/formFields'
 import { groups, orderedRequirements } from './data/requirements'
+import { site } from './data/site'
 import { standing, type Standing } from './dates'
 import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
@@ -134,7 +135,7 @@ export default function App() {
     <div className="app">
       <header className="masthead">
         <div className="masthead-inner">
-          <p className="kicker">Diocese of Allentown · Safe Environment</p>
+          <p className="kicker">{site.schoolName} · Diocese of Allentown</p>
           <h1>Volunteer Clearances</h1>
         </div>
         <nav className="tabs" aria-label="Sections">
@@ -224,7 +225,7 @@ export default function App() {
                     <strong>Download, print and sign the forms.</strong> Each one is filled in for you.
                   </li>
                   <li>
-                    <strong>Give everything to your Local Safe Environment Coordinator</strong> (LSEC) at your parish or school.
+                    <strong>Give everything to {site.lsec.name},</strong> {site.schoolName}’s Local Safe Environment Coordinator (LSEC).
                   </li>
                 </ol>
               </section>
@@ -350,8 +351,13 @@ export default function App() {
             <section className="panel">
               <h3>Who to ask</h3>
               <p>
-                Start with the <strong>Local Safe Environment Coordinator (LSEC)</strong> at your parish or school, or your CYO representative. They give out payment codes for the background checks and collect your finished paperwork.
+                Start with {site.schoolName}’s <strong>Local Safe Environment Coordinator (LSEC)</strong>, who gives out payment codes for the background checks and collects your finished paperwork.
               </p>
+              <address>
+                {site.lsec.name}, LSEC, {site.schoolName}
+                <br />
+                <span className="select">{site.lsec.email}</span>
+              </address>
               <p>For questions they can’t answer, the diocese’s contact on its forms is:</p>
               <address>
                 Janice Woolley, Background Check / Audit &amp; Training Supervisor

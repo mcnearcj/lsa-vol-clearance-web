@@ -1,4 +1,5 @@
 import type { GroupId, Requirement } from '../types'
+import { site } from './site'
 
 // Source: "Safe Environment Parish & School Volunteer Requirements Checklist" (Diocese of Allentown, rev. 2/14/2023)
 // plus the diocese's step-by-step instruction sheets. Keep this in sync with those documents.
@@ -31,7 +32,7 @@ export const requirements: Requirement[] = [
     validYears: 5,
     links: [{ label: 'PA Child Welfare Portal (Compass)', href: 'https://www.compass.state.pa.us/cwis/public/home' }],
     steps: [
-      'Ask your LSEC or CYO Representative for a free payment code.',
+      `Ask ${site.lsec.name}, your LSEC, for the free payment code.`,
       'Go to the Compass site and click “Create an Individual Account”. Create a Keystone ID (a username you will remember, e.g. lastname + first initial + middle initial). Write down your security questions and answers exactly.',
       'You will get two emails: your Keystone ID and a temporary password. Print the first one for your records.',
       'Log in with “Individual Login”, then “Access my Clearance”. Verify your identity by security question or emailed code.',
@@ -57,7 +58,7 @@ export const requirements: Requirement[] = [
     validYears: 5,
     links: [{ label: 'IdentoGO registration', href: 'https://uenroll.identogo.com' }],
     steps: [
-      'Get a payment code from your LSEC or CYO Representative.',
+      `Get the payment code from ${site.lsec.name}, your LSEC.`,
       'Go to the IdentoGO registration site and enter the Service Code for volunteers: 1KG6ZJ (employees use 1KG786).',
       'Choose “Schedule or Manage Appointment” and enter your personal information. Fields marked with a red * are required. Enter an email if you want a receipt.',
       'Employer information: Diocese of Allentown, United States, PO Box F, Allentown, Pennsylvania 18105-1538. When asked if your mailing address is the same as your residential address, choose NO, then enter your home address in the residential area.',
@@ -238,7 +239,7 @@ export const groups: { id: GroupId; title: string; intro: string }[] = [
   {
     id: 'checks',
     title: 'Background checks',
-    intro: 'Start these first. Some take a few weeks to come back. Ask your coordinator for any payment codes you need.',
+    intro: `Start these first. Some take a few weeks to come back. Ask ${site.lsec.name}, your LSEC, for the payment codes.`,
   },
   {
     id: 'sign',

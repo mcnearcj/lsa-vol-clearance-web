@@ -1,3 +1,5 @@
+import { site } from './data/site'
+
 export interface Profile {
   lastName: string
   firstName: string
@@ -32,9 +34,9 @@ export const emptyProfile: Profile = {
   zip: '',
   phone: '',
   email: '',
-  siteName: '',
-  siteCity: '',
-  locationType: '',
+  siteName: site.schoolName,
+  siteCity: site.schoolCity,
+  locationType: site.locationType,
   position: 'Volunteer',
   gender: '',
   race: '',

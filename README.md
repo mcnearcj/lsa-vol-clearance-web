@@ -56,12 +56,13 @@ The site is static files with no server of its own.
   Every push to `main` runs the linter and tests, builds, and deploys (`.github/workflows/deploy.yml`).
 - **Any web host**: run `npm run build` and upload `dist/`. It uses relative paths, so any folder works.
 
-To offer sync, use your own Supabase project (above) so your volunteers' encrypted data lives in an account you control.
+Set your school's name, city and coordinator in `src/data/site.ts`. To offer sync, use your own Supabase project (above) so your volunteers' encrypted data lives in an account you control.
 
 ## Keeping it up to date
 
-| When the diocese changes… | Edit |
+| When this changes… | Edit |
 | --- | --- |
+| The school, its city, or its LSEC (coordinator) | `src/data/site.ts` |
 | Checklist items, steps, links, renewal periods | `src/data/requirements.ts` |
 | A blank form or instruction sheet | Replace the file in `public/forms/` (same name) |
 | A form's layout | Field positions in `src/pdf/fill.ts`, then check a filled-in copy by eye |

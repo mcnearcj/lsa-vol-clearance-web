@@ -24,7 +24,7 @@ describe('checklist data', () => {
 
 describe('missingFields', () => {
   it('lists blanks by their on-screen names', () => {
-    expect(missingFields('sexabuse', emptyProfile)).toEqual(['First name', 'Last name', 'Parish or school', 'Parish or school city'])
+    expect(missingFields('sexabuse', { ...emptyProfile, siteName: '', siteCity: '' })).toEqual(['First name', 'Last name', 'Parish or school', 'Parish or school city'])
   })
   it('is empty once everything a form uses is filled in', () => {
     expect(missingFields('sexabuse', { ...emptyProfile, firstName: 'A', lastName: 'B', siteName: 'St. Joseph', siteCity: 'Bethlehem' })).toEqual([])
