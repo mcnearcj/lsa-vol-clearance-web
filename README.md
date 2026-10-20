@@ -16,10 +16,12 @@ The app never asks for or stores a Social Security Number; those fields are left
 
 ### Optional cloud backup
 
-If you connect a [Supabase](https://supabase.com) project, a **Cloud backup** tab lets a volunteer sign in and keep a copy
-of their info and progress for use on another device. The data is encrypted in the browser (PBKDF2 + AES-GCM) with a
-passphrase only the volunteer knows before upload, so the database holds ciphertext only. A forgotten passphrase cannot be
-recovered. Without the two environment variables below, the tab simply explains that backup is not turned on.
+If you connect a [Supabase](https://supabase.com) project, the **Backup** page lets a volunteer sign in with an email and
+one password and keep a copy of their info and progress for use on another device. The password never leaves the browser:
+it is stretched (PBKDF2) into two unrelated values, a sign-in secret that Supabase sees and an AES-GCM key that encrypts
+the backup before upload. The database holds ciphertext only. A password reset restores account access, but an old backup
+can't be opened with the new password; the volunteer saves again from a device that has their data. Without the two
+environment variables below, the page offers only a backup file.
 
 Setup:
 

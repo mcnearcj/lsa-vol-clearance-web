@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { cloudConfigured, getClient, type VaultRow } from '../cloud/client'
-import { b64, decryptJson, deriveKey, encryptJson, newSalt } from '../cloud/crypto'
+import { b64, decryptJson, deriveAuthSecret, deriveKey, encryptJson, newSalt } from '../cloud/crypto'
 import type { Profile, Progress } from '../types'
+
+// One password does two jobs, both worked out on this device:
+//  - a sign-in secret derived from it is what the sign-in service sees (never the password itself)
+//  - an encryption key derived from it (with a different, random salt) locks the backup before upload
+// So the server can't read backups, and a password reset gets you back in but can't open an old backup.
 
 interface Snapshot {
   v: 1
@@ -24,13 +29,14 @@ type Mode = 'signin' | 'create' | 'forgot'
 
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const here = () => window.location.origin + window.location.pathname
+const WRONG = 'That email and password don’t match an account.'
 
 /** Supabase sends people back with details in the URL hash (after confirming email or resetting a password). */
 function readAuthHash(): { error?: string; recovery: boolean } {
   const params = new URLSearchParams(window.location.hash.slice(1))
   const code = params.get('error_code')
   const recovery = params.get('type') === 'recovery'
-  if (code === 'otp_expired') return { error: 'That email link has expired. Sign in below, or use “Create account” again to get a new link.', recovery }
+  if (code === 'otp_expired') return { error: 'That email link has expired. Sign in below, or use “I’m new” again to get a new link.', recovery }
   const desc = params.get('error_description')
   return { error: desc ? desc.replace(/\+/g, ' ') : undefined, recovery }
 }
@@ -39,13 +45,12 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
+  const [password2, setPassword2] = useState('')
   const [recovering, setRecovering] = useState(() => cloudConfigured && readAuthHash().recovery)
-  const [passphrase, setPassphrase] = useState('')
-  const [passphrase2, setPassphrase2] = useState('')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [vault, setVault] = useState<Vault | null>(null)
-  const [hasCopy, setHasCopy] = useState<boolean | null>(null)
+  // A backup exists but this password can't open it (made before a password reset, or with the old separate passphrase).
+  const [stale, setStale] = useState(false)
   const [cloudTime, setCloudTime] = useState<string | null>(null)
   const [autoSync, setAutoSync] = useState(false)
   // Automatic saving is offered only after an explicit save or restore, so an empty device can't overwrite a good copy.
@@ -104,54 +109,96 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
     }
   }, [])
 
-  // Once signed in, find out whether a saved copy already exists so step 2 can say "unlock" or "create".
-  useEffect(() => {
-    if (!userEmail) return
-    let live = true
-    fetchRow()
-      .then((row) => {
-        if (!live) return
-        setHasCopy(Boolean(row))
-        setCloudTime(row?.updated_at ?? null)
-      })
-      .catch(() => live && setHasCopy(null))
-    return () => {
-      live = false
+  /** Signs in with the derived secret. Accounts made before the one-password change used the raw password; move them over. */
+  const signInWith = async (addr: string, pw: string) => {
+    const c = await getClient()
+    const secret = await deriveAuthSecret(addr, pw)
+    const first = await c.auth.signInWithPassword({ email: addr, password: secret })
+    if (!first.error) return first.data.user.email ?? addr
+    if (first.error.message !== 'Invalid login credentials') throw new Error(first.error.message)
+    const legacy = await c.auth.signInWithPassword({ email: addr, password: pw })
+    if (legacy.error) throw new Error(legacy.error.message === 'Invalid login credentials' ? WRONG : legacy.error.message)
+    const { error: upd } = await c.auth.updateUser({ password: secret })
+    if (upd) throw new Error(upd.message)
+    return legacy.data.user.email ?? addr
+  }
+
+  /** Works out the encryption key from the password and checks it against any saved backup. */
+  const unlockWith = async (pw: string) => {
+    const row = await fetchRow()
+    setCloudTime(row?.updated_at ?? null)
+    if (row) {
+      const key = await deriveKey(pw, b64.from(row.salt))
+      try {
+        await decryptJson<Snapshot>(key, row.iv, row.ciphertext)
+        setVault({ key, salt: row.salt })
+        setStale(false)
+        return
+      } catch {
+        setStale(true)
+      }
+    } else {
+      setStale(false)
     }
-  }, [userEmail, fetchRow])
+    const salt = newSalt()
+    setVault({ key: await deriveKey(pw, salt), salt: b64.to(salt) })
+  }
 
   const submitAccount = () =>
     run(async () => {
       const c = await getClient()
+      const addr = email.trim()
       if (mode === 'forgot') {
-        const { error: err } = await c.auth.resetPasswordForEmail(email, { redirectTo: here() })
+        const { error: err } = await c.auth.resetPasswordForEmail(addr, { redirectTo: here() })
         if (err) throw new Error(err.message)
         setMessage('If that email has an account, a reset link is on its way. Open it on this device.')
         return
       }
+      if (password.length < 8) throw new Error('Your password needs at least 8 characters.')
       if (mode === 'create') {
-        const { data, error: err } = await c.auth.signUp({ email, password, options: { emailRedirectTo: here() } })
+        if (password !== password2) throw new Error('The two passwords don’t match.')
+        const { data, error: err } = await c.auth.signUp({
+          email: addr,
+          password: await deriveAuthSecret(addr, password),
+          options: { emailRedirectTo: here() },
+        })
         if (err) throw new Error(err.message)
         if (!data.session) {
-          setMessage(`Almost done. We sent a confirmation link to ${email}. Open it on this device, then come back here.`)
+          setMessage(`Almost done. We sent a confirmation link to ${addr}. Open it on this device, then sign in here.`)
           setMode('signin')
+          setPassword('')
+          setPassword2('')
           return
         }
-        setUserEmail(data.session.user.email ?? email)
+        setUserEmail(data.session.user.email ?? addr)
       } else {
-        const { data, error: err } = await c.auth.signInWithPassword({ email, password })
-        if (err) throw new Error(err.message === 'Invalid login credentials' ? 'That email and password don’t match an account.' : err.message)
-        setUserEmail(data.user.email ?? email)
+        setUserEmail(await signInWith(addr, password))
       }
+      await unlockWith(password)
+      setPassword('')
+      setPassword2('')
+    })
+
+  // Signed in from an earlier visit or an email link: the password is needed again to open the backup.
+  const unlockSession = () =>
+    run(async () => {
+      if (!userEmail) return
+      await signInWith(userEmail, password)
+      await unlockWith(password)
       setPassword('')
     })
 
   const setPasswordFromLink = () =>
     run(async () => {
+      if (!userEmail) return
+      if (password.length < 8) throw new Error('Your password needs at least 8 characters.')
+      if (password !== password2) throw new Error('The two passwords don’t match.')
       const c = await getClient()
-      const { error: err } = await c.auth.updateUser({ password: newPassword })
+      const { error: err } = await c.auth.updateUser({ password: await deriveAuthSecret(userEmail, password) })
       if (err) throw new Error(err.message)
-      setNewPassword('')
+      await unlockWith(password)
+      setPassword('')
+      setPassword2('')
       setRecovering(false)
       setMessage('Password updated. You’re signed in.')
     })
@@ -162,34 +209,10 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
       await c.auth.signOut()
       setUserEmail(null)
       setVault(null)
-      setHasCopy(null)
+      setStale(false)
       setAutoSync(false)
       setReconciled(false)
       setCloudTime(null)
-    })
-
-  const unlock = () =>
-    run(async () => {
-      if (passphrase.length < 8) throw new Error('Your backup passphrase needs at least 8 characters.')
-      const row = await fetchRow()
-      if (row) {
-        const key = await deriveKey(passphrase, b64.from(row.salt))
-        try {
-          await decryptJson<Snapshot>(key, row.iv, row.ciphertext)
-        } catch {
-          throw new Error('That passphrase doesn’t open your saved copy. Check for typos and try again.')
-        }
-        setVault({ key, salt: row.salt })
-        setCloudTime(row.updated_at)
-        setHasCopy(true)
-      } else {
-        if (hasCopy === false && passphrase !== passphrase2) throw new Error('The two passphrases don’t match.')
-        const salt = newSalt()
-        setVault({ key: await deriveKey(passphrase, salt), salt: b64.to(salt) })
-        setHasCopy(false)
-      }
-      setPassphrase('')
-      setPassphrase2('')
     })
 
   const save = useCallback(async (v: Vault) => {
@@ -202,7 +225,7 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
     const { error: err } = await c.from('vault').upsert({ user_id: userData.user.id, salt: v.salt, iv, ciphertext, updated_at })
     if (err) throw new Error(err.message)
     setCloudTime(updated_at)
-    setHasCopy(true)
+    setStale(false)
     setReconciled(true)
   }, [])
 
@@ -231,7 +254,7 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
       const { error: err } = await c.from('vault').delete().not('user_id', 'is', null)
       if (err) throw new Error(err.message)
       setCloudTime(null)
-      setHasCopy(false)
+      setStale(false)
       setAutoSync(false)
       setReconciled(false)
       setConfirmDelete(false)
@@ -271,125 +294,132 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
     </li>
   )
 
-  const accountForm = recovering && userEmail ? (
+  const passwordField = (label: string, id: string, value: string, set: (v: string) => void, autoComplete: string, hint?: string) => (
+    <label className="field">
+      <span>{label}</span>
+      <input id={id} type="password" autoComplete={autoComplete} minLength={8} value={value} onChange={(e) => set(e.target.value)} required />
+      {hint && <small>{hint}</small>}
+    </label>
+  )
+
+  const form = (onSubmit: () => void, children: ReactNode) => (
     <form
       className="stack"
       onSubmit={(e) => {
         e.preventDefault()
-        void setPasswordFromLink()
+        onSubmit()
       }}
     >
-      <label className="field">
-        <span>New account password</span>
-        <input id="cloud-new-password" type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-        <small>At least 8 characters.</small>
-      </label>
-      <div className="row">
-        <button className="primary" type="submit" disabled={busy}>
-          Save new password
-        </button>
-      </div>
-    </form>
-  ) : (
-    <form
-      className="stack"
-      onSubmit={(e) => {
-        e.preventDefault()
-        void submitAccount()
-      }}
-    >
-      <div className="seg" role="group" aria-label="Account">
-        <button type="button" className={mode !== 'create' ? 'on' : ''} aria-pressed={mode !== 'create'} onClick={() => setMode('signin')}>
-          I have an account
-        </button>
-        <button type="button" className={mode === 'create' ? 'on' : ''} aria-pressed={mode === 'create'} onClick={() => setMode('create')}>
-          I’m new
-        </button>
-      </div>
-      <label className="field">
-        <span>Email</span>
-        <input id="cloud-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </label>
-      {mode !== 'forgot' && (
-        <label className="field">
-          <span>{mode === 'create' ? 'Choose a password' : 'Password'}</span>
-          <input
-            id="cloud-password"
-            type="password"
-            autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          {mode === 'create' && <small>At least 8 characters.</small>}
-        </label>
-      )}
-      <div className="row">
-        <button className="primary" type="submit" disabled={busy}>
-          {mode === 'create' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
-        </button>
-        {mode === 'signin' && (
-          <button type="button" className="ghost" onClick={() => setMode('forgot')}>
-            Forgot password?
-          </button>
-        )}
-        {mode === 'forgot' && (
-          <button type="button" className="ghost" onClick={() => setMode('signin')}>
-            Back to sign in
-          </button>
-        )}
-      </div>
+      {children}
     </form>
   )
 
-  const passphraseForm = (
-    <form
-      className="stack"
-      onSubmit={(e) => {
-        e.preventDefault()
-        void unlock()
-      }}
-    >
-      <p>
-        {hasCopy
-          ? 'Enter the backup passphrase you chose when you first saved.'
-          : 'Choose a backup passphrase. It scrambles your info before it leaves this device, so nobody else can read it. It is different from your password.'}
-      </p>
-      <label className="field">
-        <span>Backup passphrase</span>
-        <input id="cloud-passphrase" type="password" autoComplete="off" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
-        {!hasCopy && <small>At least 8 characters. A short sentence works well.</small>}
-      </label>
-      {hasCopy === false && (
+  let step1: ReactNode
+  if (userEmail && recovering) {
+    step1 = form(
+      () => void setPasswordFromLink(),
+      <>
+        <p>Choose a new password for {userEmail}.</p>
+        {passwordField('New password', 'cloud-new-password', password, setPassword, 'new-password', 'At least 8 characters.')}
+        {passwordField('Type it again', 'cloud-new-password-2', password2, setPassword2, 'new-password')}
+        <div className="row">
+          <button className="primary" type="submit" disabled={busy}>
+            Save new password
+          </button>
+        </div>
+      </>,
+    )
+  } else if (userEmail && !vault) {
+    step1 = form(
+      () => void unlockSession(),
+      <>
+        <p>Signed in as {userEmail}. Enter your password to open your backup.</p>
+        {passwordField('Password', 'cloud-password', password, setPassword, 'current-password')}
+        <div className="row">
+          <button className="primary" type="submit" disabled={busy || !password}>
+            Continue
+          </button>
+          <button type="button" className="ghost" onClick={() => void signOut()} disabled={busy}>
+            Use a different account
+          </button>
+        </div>
+      </>,
+    )
+  } else if (userEmail) {
+    step1 = <p className="small">{userEmail}</p>
+  } else {
+    step1 = form(
+      () => void submitAccount(),
+      <>
+        <div className="seg" role="group" aria-label="Account">
+          <button type="button" className={mode !== 'create' ? 'on' : ''} aria-pressed={mode !== 'create'} onClick={() => setMode('signin')}>
+            I have an account
+          </button>
+          <button type="button" className={mode === 'create' ? 'on' : ''} aria-pressed={mode === 'create'} onClick={() => setMode('create')}>
+            I’m new
+          </button>
+        </div>
         <label className="field">
-          <span>Type it again</span>
-          <input id="cloud-passphrase-2" type="password" autoComplete="off" value={passphrase2} onChange={(e) => setPassphrase2(e.target.value)} />
+          <span>Email</span>
+          <input id="cloud-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
-      )}
-      {!hasCopy && <p className="callout">Write it down somewhere safe. If you lose it, nobody can recover your backup, not even the site owner.</p>}
-      <div className="row">
-        <button className="primary" type="submit" disabled={busy || !passphrase}>
-          {hasCopy ? 'Unlock my backup' : 'Set passphrase'}
-        </button>
-      </div>
-    </form>
-  )
+        {mode !== 'forgot' &&
+          passwordField(
+            mode === 'create' ? 'Choose a password' : 'Password',
+            'cloud-password',
+            password,
+            setPassword,
+            mode === 'create' ? 'new-password' : 'current-password',
+            mode === 'create' ? 'At least 8 characters.' : undefined,
+          )}
+        {mode === 'create' && passwordField('Type it again', 'cloud-password-2', password2, setPassword2, 'new-password')}
+        {mode === 'create' && (
+          <p className="callout">Keep your password somewhere safe. If you reset it later, your old backup can’t be opened, but everything on your device stays and you can save it again.</p>
+        )}
+        {mode === 'forgot' && (
+          <p className="small">After resetting, you’ll be signed back in. Your old backup can’t be opened with a new password, so save again from a device that has your info.</p>
+        )}
+        <div className="row">
+          <button className="primary" type="submit" disabled={busy}>
+            {mode === 'create' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
+          </button>
+          {mode === 'signin' && (
+            <button type="button" className="ghost" onClick={() => setMode('forgot')}>
+              Forgot password?
+            </button>
+          )}
+          {mode === 'forgot' && (
+            <button type="button" className="ghost" onClick={() => setMode('signin')}>
+              Back to sign in
+            </button>
+          )}
+        </div>
+      </>,
+    )
+  }
+
+  const step1Done = Boolean(userEmail && vault && !recovering)
 
   const saveRestore = (
     <div className="stack">
-      <p className="small">{cloudTime ? `Last saved ${when(cloudTime)}.` : 'Nothing saved yet.'}</p>
+      {stale ? (
+        <p className="callout">
+          You have an older backup that can’t be opened with this password (it was saved before a password reset or with the old separate passphrase). Save this device’s info to replace it.
+        </p>
+      ) : (
+        <p className="small">{cloudTime ? `Last saved ${when(cloudTime)}.` : 'Nothing saved yet.'}</p>
+      )}
       <div className="row">
         <button className="primary" onClick={() => void saveNow()} disabled={busy}>
-          {cloudTime ? 'Save this device’s info' : 'Save my first backup'}
+          {stale ? 'Replace it with this device’s info' : cloudTime ? 'Save this device’s info' : 'Save my first backup'}
         </button>
-        {cloudTime && (
+        {cloudTime && !stale && (
           <button className="secondary" onClick={() => void restore()} disabled={busy}>
             Restore my backup here
           </button>
         )}
       </div>
-      {cloudTime && !reconciled && (
+      {cloudTime && !stale && !reconciled && (
         <p className="small">On a new device? Choose “Restore” first, so you don’t overwrite your backup with an empty checklist.</p>
       )}
       <label className="check">
@@ -423,27 +453,21 @@ export function CloudPanel({ profile, progress, onRestore }: Props) {
   return (
     <section className="panel cloud">
       <h3>Online backup</h3>
-      <p>Sign in to keep a copy you can open on another phone or computer. Your info is scrambled on this device before it’s uploaded, so only you can read it.</p>
+      <p>Sign in to keep a copy you can open on another phone or computer. Your info is scrambled on this device with your password before it’s uploaded, so only you can read it.</p>
 
       <ol className="steps-ui">
         {step(
           1,
-          userEmail ? 'Signed in' : 'Sign in or create an account',
-          userEmail && !recovering ? 'done' : 'active',
-          userEmail && !recovering ? <p className="small">{userEmail}</p> : accountForm,
-          userEmail && (
+          step1Done ? 'Signed in' : userEmail && recovering ? 'Set a new password' : userEmail ? 'Open your backup' : 'Sign in or create an account',
+          step1Done ? 'done' : 'active',
+          step1,
+          step1Done && (
             <button className="ghost small-btn" onClick={() => void signOut()} disabled={busy}>
               Sign out
             </button>
           ),
         )}
-        {step(
-          2,
-          vault ? 'Backup unlocked' : hasCopy ? 'Unlock your backup' : 'Set a backup passphrase',
-          vault ? 'done' : userEmail && !recovering ? 'active' : 'todo',
-          userEmail && !recovering && !vault ? passphraseForm : null,
-        )}
-        {step(3, 'Save or restore', vault ? 'active' : 'todo', vault ? saveRestore : null)}
+        {step(2, 'Save or restore', step1Done ? 'active' : 'todo', step1Done ? saveRestore : null)}
       </ol>
 
       {message && (

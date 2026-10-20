@@ -311,7 +311,7 @@ export default function App() {
                 <dt>Why isn’t my Social Security Number on the forms?</dt>
                 <dd>The site never asks for it, so it can’t be stored or leaked. Write it on the printed form by hand where needed.</dd>
                 <dt>Where is my information kept?</dt>
-                <dd>In this browser on this device. Forms are filled in on your device too. Nothing is uploaded unless you turn on online backup, which scrambles your info with a passphrase only you know.</dd>
+                <dd>In this browser on this device. Forms are filled in on your device too. Nothing is uploaded unless you turn on online backup, which scrambles your info with your password before it leaves your device.</dd>
                 <dt>Who made this, and how does it work?</dt>
                 <dd>
                   It’s a free, open project. All of the code is public on{' '}

@@ -45,3 +45,14 @@ export async function decryptJson<T>(key: CryptoKey, iv: string, ciphertext: str
   const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64.from(iv) }, key, b64.from(ciphertext))
   return JSON.parse(dec.decode(data)) as T
 }
+
+/**
+ * Turns the volunteer's one password into the secret sent to the sign-in service. The service never sees the
+ * password itself, so it can't derive the encryption key (which uses a different, random salt).
+ */
+export async function deriveAuthSecret(email: string, password: string): Promise<string> {
+  const material = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits'])
+  const salt = enc.encode(`lsa-vol-clearance:auth:${email.trim().toLowerCase()}`)
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: ITERATIONS, hash: 'SHA-256' }, material, 256)
+  return b64.to(new Uint8Array(bits))
+}
