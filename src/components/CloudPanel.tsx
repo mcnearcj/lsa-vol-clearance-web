@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { cloudConfigured, getClient, type VaultRow } from '../cloud/client'
 import { b64, decryptJson, deriveAuthSecret, deriveKey, encryptJson, newSalt } from '../cloud/crypto'
 import { keystore } from '../cloud/keystore'
+import { isEmpty, merge, same, type SyncData } from '../cloud/merge'
 import { useStored } from '../storage'
 import type { Profile, Progress } from '../types'
 
@@ -10,6 +11,12 @@ import type { Profile, Progress } from '../types'
 //  - an encryption key derived from it (with a different, random salt) locks the synced copy before upload
 // So the server can't read synced copies, and a password reset gets you back in but can't open an old copy.
 // Once signed in, sync runs automatically unless the person opted out at their first sign-in on this device.
+//
+// Keeping several tabs and devices in step:
+//  - each device remembers the last version it and the server agreed on (the "base")
+//  - a sync fetches the server copy; if someone else saved since the base, their changes are merged in (see merge.ts)
+//  - a save only succeeds if nobody else saved since the base; otherwise it fetches and merges first
+//  - devices sync when the page comes back into view and every minute while it's open
 
 interface Snapshot {
   v: 1
@@ -23,6 +30,8 @@ interface Props {
   profile: Profile
   progress: Progress
   onRestore: (data: { profile: Profile; progress: Progress }) => void
+  /** Changes from another device were merged into this one. */
+  onRemoteUpdate?: () => void
   onStatus?: (status: SyncStatus, savedAt: string | null, email: string | null) => void
   /** Changes when the person erases their data on this device; signs out so an empty device is never backed up. */
   resetToken?: number
@@ -51,20 +60,17 @@ function readAuthHash(): { error?: string; recovery: boolean } {
   return { error: desc ? desc.replace(/\+/g, ' ') : undefined, recovery }
 }
 
-/** JSON with sorted keys, so two copies of the same data compare equal. */
-function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>).filter(([, v]) => v !== undefined && v !== '')
-    return `{${entries.sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${JSON.stringify(k)}:${stable(v)}`).join(',')}}`
-  }
-  return JSON.stringify(value)
+interface Base {
+  userId: string
+  /** The server's updated_at for the version both sides agreed on. */
+  time: string
+  data: SyncData | null
 }
+const noBase: Base = { userId: '', time: '', data: null }
 
-const isEmpty = (d: { profile: Profile; progress: Progress }) =>
-  !d.profile.firstName.trim() && !d.profile.lastName.trim() && Object.keys(d.progress).length === 0
+const POLL_MS = 60_000
 
-export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken = 0 }: Props) {
+export function CloudPanel({ profile, progress, onRestore, onRemoteUpdate, onStatus, resetToken = 0 }: Props) {
   const [pref, setPref] = useStored('cloud', { autoSync: true, decided: false })
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
@@ -72,12 +78,18 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
   const [password2, setPassword2] = useState('')
   const [optIn, setOptIn] = useState(true)
   const [recovering, setRecovering] = useState(() => cloudConfigured && readAuthHash().recovery)
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null)
+  const [user, setUserState] = useState<{ id: string; email: string } | null>(null)
+  const userRef = useRef(user)
+  // Update the ref immediately: a sync started right after sign-in must know whose copy it's syncing.
+  const setUser = useCallback((u: { id: string; email: string } | null) => {
+    userRef.current = u
+    setUserState(u)
+  }, [])
   const [vault, setVault] = useState<Vault | null>(null)
   // A synced copy exists but this password can't open it (it was saved before a password reset).
   const [stale, setStale] = useState(false)
   // The synced copy and this device both have different info; the person chooses which to keep.
-  const [conflict, setConflict] = useState<Snapshot | null>(null)
+  const [conflict, setConflict] = useState<{ data: SyncData; time: string } | null>(null)
   const [cloudTime, setCloudTime] = useState<string | null>(null)
   // Automatic saving starts only once the synced copy and this device agree, so an empty device can't overwrite a good copy.
   const [reconciled, setReconciled] = useState(false)
@@ -87,10 +99,33 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
   const [message, setMessage] = useState('')
   const [error, setError] = useState(() => (cloudConfigured ? (readAuthHash().error ?? '') : ''))
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const latest = useRef({ profile, progress })
+  // Stored, so a reload (and other tabs) remember what this device last agreed with the server.
+  const [base, setBase] = useStored<Base>('syncBase', noBase)
+  const latest = useRef<SyncData>({ profile, progress })
+  const baseRef = useRef(base)
   useEffect(() => {
     latest.current = { profile, progress }
   }, [profile, progress])
+  useEffect(() => {
+    baseRef.current = base
+  }, [base])
+
+  const remember = useCallback(
+    (time: string, data: SyncData | null) => {
+      const next = { userId: userRef.current?.id ?? '', time, data }
+      baseRef.current = next
+      setBase(next)
+    },
+    [setBase],
+  )
+
+  // Syncs run one at a time per tab, so a save and a fetch never race each other here.
+  const queue = useRef(Promise.resolve())
+  const enqueue = useCallback((task: () => Promise<void>) => {
+    const next = queue.current.then(task, task)
+    queue.current = next.catch(() => {})
+    return next
+  }, [])
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -112,62 +147,127 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     return data as VaultRow | null
   }, [])
 
-  const save = useCallback(async (v: Vault) => {
-    const c = await getClient()
-    const { data: userData } = await c.auth.getUser()
-    if (!userData.user) throw new Error('You’ve been signed out. Sign in again to keep syncing.')
-    const snapshot: Snapshot = { v: 1, ...latest.current }
-    const { iv, ciphertext } = await encryptJson(v.key, snapshot)
-    const updated_at = new Date().toISOString()
-    const { error: err } = await c.from('vault').upsert({ user_id: userData.user.id, salt: v.salt, iv, ciphertext, updated_at })
-    if (err) throw new Error(err.message)
-    setCloudTime(updated_at)
-    setStale(false)
-    setConflict(null)
-    setReconciled(true)
-    setSyncError(false)
-  }, [])
+  /** Uploads this device's info, but only if nobody else has saved since `expected` (null: there's no copy yet). */
+  const push = useCallback(
+    async (v: Vault, expected: string | null): Promise<'saved' | 'changed'> => {
+      const c = await getClient()
+      const u = userRef.current
+      if (!u) throw new Error('You’ve been signed out. Sign in again to keep syncing.')
+      const data: SyncData = { ...latest.current }
+      const snapshot: Snapshot = { v: 1, ...data }
+      const { iv, ciphertext } = await encryptJson(v.key, snapshot)
+      const fields = { salt: v.salt, iv, ciphertext, updated_at: new Date().toISOString() }
+      let time: string | undefined
+      if (expected === null) {
+        const { data: rows, error: err } = await c.from('vault').insert({ user_id: u.id, ...fields }).select('updated_at')
+        if (err?.code === '23505') return 'changed' // another device created it first
+        if (err) throw new Error(err.message)
+        time = rows?.[0]?.updated_at
+      } else {
+        const { data: rows, error: err } = await c.from('vault').update(fields).eq('user_id', u.id).eq('updated_at', expected).select('updated_at')
+        if (err) throw new Error(err.message)
+        if (!rows?.length) return 'changed' // someone saved since we last looked
+        time = rows[0].updated_at
+      }
+      remember(time ?? fields.updated_at, data)
+      setCloudTime(time ?? fields.updated_at)
+      setStale(false)
+      setConflict(null)
+      setReconciled(true)
+      setSyncError(false)
+      return 'saved'
+    },
+    [remember],
+  )
 
-  /** Brings the synced copy and this device into agreement: save, restore, or ask. */
-  const reconcile = useCallback(
-    async (v: Vault, auto: boolean) => {
+  /**
+   * Brings this device and the synced copy into agreement: uploads local changes, merges in changes from other
+   * devices, loads the copy onto an empty device, or asks when two devices with no shared history disagree.
+   */
+  const sync = useCallback(
+    async (v: Vault, auto: boolean, attempt = 0): Promise<void> => {
       const row = await fetchRow()
-      setCloudTime(row?.updated_at ?? null)
+      const b = baseRef.current.userId === userRef.current?.id ? baseRef.current : noBase
+      const local = latest.current
+
       if (!row) {
-        if (auto) await save(v)
+        if (b.time) {
+          // It existed when this device last synced, so it was deleted on purpose somewhere else.
+          remember('', null)
+          setCloudTime(null)
+          setReconciled(false)
+          setPref({ autoSync: false, decided: true })
+          setMessage('Your synced copy was deleted on another device, so sync is off here. Everything on this device is still here.')
+          return
+        }
+        setCloudTime(null)
+        if (auto && (await push(v, null)) === 'changed' && attempt < 2) await sync(v, auto, attempt + 1)
         return
       }
-      let data: Snapshot
+
+      let remote: SyncData
       try {
-        data = await decryptJson<Snapshot>(v.key, row.iv, row.ciphertext)
+        const snap = await decryptJson<Snapshot>(v.key, row.iv, row.ciphertext)
+        remote = { profile: snap.profile, progress: snap.progress }
       } catch {
         setStale(true)
+        setCloudTime(row.updated_at)
         return
       }
       setStale(false)
+      setCloudTime(row.updated_at)
       if (!auto) return
-      const local = latest.current
-      if (isEmpty(local)) {
-        onRestore({ profile: data.profile, progress: data.progress })
+
+      let target = local
+      if (b.data && b.time === row.updated_at) {
+        // Nobody else saved. Upload this device's changes, if any.
+        setReconciled(true)
+        if (same(local, b.data)) return
+      } else if (b.data) {
+        // Someone else saved: merge their changes with this device's.
+        target = merge(b.data, local, remote)
+        if (!same(target, local)) {
+          onRestore(target)
+          latest.current = target
+          onRemoteUpdate?.()
+        }
+        remember(row.updated_at, remote)
+        setReconciled(true)
+        if (same(target, remote)) return
+      } else if (isEmpty(local)) {
+        onRestore(remote)
+        latest.current = remote
+        remember(row.updated_at, remote)
         setReconciled(true)
         setMessage('Your synced info was loaded onto this device.')
-      } else if (stable({ p: local.profile, g: local.progress }) === stable({ p: data.profile, g: data.progress })) {
+        return
+      } else if (same(local, remote)) {
+        remember(row.updated_at, remote)
         setReconciled(true)
+        return
       } else {
-        setConflict(data)
+        // First sync on this device and both sides have different info: ask which to keep.
+        setConflict({ data: remote, time: row.updated_at })
+        return
       }
+      if ((await push(v, row.updated_at)) === 'changed' && attempt < 2) await sync(v, auto, attempt + 1)
     },
-    [fetchRow, save, onRestore],
+    [fetchRow, push, remember, onRestore, onRemoteUpdate, setPref],
   )
 
-  const forget = useCallback(async (userId?: string) => {
-    if (userId) await keystore.remove(userId)
-    setVault(null)
-    setStale(false)
-    setConflict(null)
-    setReconciled(false)
-    setCloudTime(null)
-  }, [])
+  const forget = useCallback(
+    async (userId?: string) => {
+      if (userId) await keystore.remove(userId)
+      setVault(null)
+      setStale(false)
+      setConflict(null)
+      setReconciled(false)
+      setCloudTime(null)
+      baseRef.current = noBase
+      setBase(noBase)
+    },
+    [setBase],
+  )
 
   // Pick up an existing sign-in (and its remembered key), and anything an email link brought back.
   useEffect(() => {
@@ -192,7 +292,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
           const stored = await keystore.get(u.id)
           if (stored && live) {
             setVault(stored)
-            await reconcile(stored, pref.autoSync).catch(() => setSyncError(true))
+            await enqueue(() => sync(stored, pref.autoSync)).catch(() => setSyncError(true))
           }
         }
       })
@@ -218,7 +318,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
       const c = await getClient().catch(() => null)
       await c?.auth.signOut()
     })()
-  }, [resetToken, forget, setPref])
+  }, [resetToken, forget, setPref, setUser])
 
   /** Signs in with the secret derived from the password; the password itself is never sent. */
   const signInWith = async (addr: string, pw: string) => {
@@ -247,7 +347,7 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     }
     await keystore.put(userId, v)
     setVault(v)
-    await reconcile(v, auto)
+    await enqueue(() => sync(v, auto))
   }
 
   const submitAccount = () =>
@@ -322,31 +422,42 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
     })
 
   const saveNow = () =>
-    run(async () => {
-      if (!vault) return
-      await save(vault)
-      setMessage('Synced. Everything is up to date.')
-    })
-
-  const restore = (data?: Snapshot) =>
-    run(async () => {
-      if (!vault) return
-      let snap = data
-      if (!snap) {
+    run(() =>
+      enqueue(async () => {
+        if (!vault) return
+        // Replace whatever is there with this device's info (the person chose this).
         const row = await fetchRow()
-        if (!row) throw new Error('There’s no saved copy yet.')
-        snap = await decryptJson<Snapshot>(vault.key, row.iv, row.ciphertext)
-        setCloudTime(row.updated_at)
-      }
-      onRestore({ profile: snap.profile, progress: snap.progress })
-      setConflict(null)
-      setReconciled(true)
-      setMessage('Done. This device now matches your synced copy.')
-    })
+        if ((await push(vault, row?.updated_at ?? null)) === 'changed') throw new Error('Another device just saved. Try again.')
+        setMessage('Synced. Everything is up to date.')
+      }),
+    )
+
+  const restore = (data?: SyncData, time?: string) =>
+    run(() =>
+      enqueue(async () => {
+        if (!vault) return
+        let snap = data
+        let at = time
+        if (!snap) {
+          const row = await fetchRow()
+          if (!row) throw new Error('There’s no saved copy yet.')
+          const s = await decryptJson<Snapshot>(vault.key, row.iv, row.ciphertext)
+          snap = { profile: s.profile, progress: s.progress }
+          at = row.updated_at
+          setCloudTime(row.updated_at)
+        }
+        onRestore(snap)
+        latest.current = snap
+        if (at) remember(at, snap)
+        setConflict(null)
+        setReconciled(true)
+        setMessage('Done. This device now matches your synced copy.')
+      }),
+    )
 
   const setAuto = (on: boolean) => {
     setPref({ autoSync: on, decided: true })
-    if (on && vault && !reconciled) void run(() => reconcile(vault, true))
+    if (on && vault) void run(() => enqueue(() => sync(vault, true)))
   }
 
   const deleteCloud = () =>
@@ -358,21 +469,40 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
       setStale(false)
       setReconciled(false)
       setConfirmDelete(false)
+      remember('', null)
       setPref({ autoSync: false, decided: true })
       setMessage('Your synced copy was deleted and sync is off. Everything on this device is still here.')
     })
 
   // Keep the synced copy current while automatic sync is on. Waits for a pause in edits.
+  const autoOn = pref.autoSync && Boolean(vault) && reconciled && !stale && !conflict
+  const runAuto = useCallback(() => {
+    if (!vault) return
+    setSaving(true)
+    enqueue(() => sync(vault, true))
+      .then(() => setSyncError(false))
+      .catch(() => setSyncError(true))
+      .finally(() => setSaving(false))
+  }, [vault, enqueue, sync])
   useEffect(() => {
-    if (!pref.autoSync || !vault || !reconciled || stale) return
-    const t = setTimeout(() => {
-      setSaving(true)
-      save(vault)
-        .catch(() => setSyncError(true))
-        .finally(() => setSaving(false))
-    }, 2000)
+    if (!autoOn) return
+    const t = setTimeout(runAuto, 2000)
     return () => clearTimeout(t)
-  }, [pref.autoSync, vault, reconciled, stale, profile, progress, save])
+  }, [autoOn, profile, progress, runAuto])
+
+  // Pick up changes from other devices: when the page comes back into view, and every minute while it's showing.
+  useEffect(() => {
+    if (!autoOn) return
+    const onVisible = () => document.visibilityState === 'visible' && runAuto()
+    const poll = setInterval(onVisible, POLL_MS)
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      clearInterval(poll)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [autoOn, runAuto])
 
   // Tell the rest of the site how sync is doing, for the status shown under the header.
   const status: SyncStatus = !cloudConfigured
@@ -556,8 +686,8 @@ export function CloudPanel({ profile, progress, onRestore, onStatus, resetToken 
           <strong>Your synced copy and this device have different info.</strong> Which do you want to keep? The other will be replaced.
         </p>
         <div className="row">
-          <button className="primary" onClick={() => void restore(conflict)} disabled={busy}>
-            Use my synced copy{cloudTime ? ` (saved ${when(cloudTime)})` : ''}
+          <button className="primary" onClick={() => void restore(conflict.data, conflict.time)} disabled={busy}>
+            Use my synced copy (saved {when(conflict.time)})
           </button>
           <button className="secondary" onClick={() => void saveNow()} disabled={busy}>
             Keep this device’s info

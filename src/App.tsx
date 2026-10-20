@@ -67,6 +67,13 @@ export default function App() {
   const [confirmSwitch, setConfirmSwitch] = useState(false)
   const [cleared, setCleared] = useState(false)
   const [stale, setStale] = useState(false)
+  const [remoteNote, setRemoteNote] = useState(false)
+  const onRemoteUpdate = useCallback(() => setRemoteNote(true), [])
+  useEffect(() => {
+    if (!remoteNote) return
+    const t = setTimeout(() => setRemoteNote(false), 8000)
+    return () => clearTimeout(t)
+  }, [remoteNote])
   useEffect(() => {
     const onStale = () => setStale(true)
     window.addEventListener(STALE_EVENT, onStale)
@@ -180,6 +187,12 @@ export default function App() {
               Reload page
             </button>
           </div>
+        )}
+
+        {remoteNote && (
+          <p className="notice ok" role="status">
+            Updated with changes from your other device.
+          </p>
         )}
 
         {cleared && !hasData && !syncEmail && (
@@ -368,6 +381,7 @@ export default function App() {
             profile={profile}
             progress={progress}
             onStatus={onSyncStatus}
+            onRemoteUpdate={onRemoteUpdate}
             resetToken={resetToken}
             onRestore={(d) => {
               setProfile({ ...emptyProfile, ...d.profile })
