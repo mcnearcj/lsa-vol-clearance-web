@@ -1,10 +1,11 @@
 import '@fontsource-variable/dancing-script'
 import { useEffect, useRef, useState } from 'react'
+import { downloadChecklist } from '../checklistDownload'
 import { fieldLabels, formFields } from '../data/formFields'
 import { site } from '../data/site'
 import { saveFile } from '../save'
 import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
-import { personName, ssnOnAuthorization, type FormId, type Profile } from '../types'
+import { personName, ssnOnAuthorization, type FormId, type Profile, type Progress } from '../types'
 
 // Sign every form at once, on screen. The signature and SSN live only in this dialog's memory for one download:
 // they're never saved on the device, synced, or sent anywhere.
@@ -12,6 +13,7 @@ import { personName, ssnOnAuthorization, type FormId, type Profile } from '../ty
 interface Props {
   open: boolean
   profile: Profile
+  progress: Progress
   onClose: () => void
   onEditInfo: () => void
   /** The forms were downloaded signed. */
@@ -61,7 +63,7 @@ function cropToInk(src: HTMLCanvasElement): HTMLCanvasElement | null {
   return out
 }
 
-export function SignDialog({ open, profile, onClose, onEditInfo, onSigned }: Props) {
+export function SignDialog({ open, profile, progress, onClose, onEditInfo, onSigned }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const pad = useRef<HTMLCanvasElement>(null)
   const drawing = useRef<{ x: number; y: number } | null>(null)
@@ -233,6 +235,28 @@ export function SignDialog({ open, profile, onClose, onEditInfo, onSigned }: Pro
             </li>
             {withSsn && <li>The file contains your Social Security Number. Print it or hand it over in person rather than emailing it as a plain attachment.</li>}
           </ol>
+          <div className="checklist-offer">
+            <p>
+              <strong>Download your submission checklist too.</strong> It lists the certificates and results to hand in with these forms. It’s a separate file for you to keep, so don’t hand it in.
+            </p>
+            <button
+              className="secondary"
+              onClick={() => {
+                setError('')
+                downloadChecklist(profile, progress, today()).catch((e) => {
+                  if (isStaleBuildError(e)) setStale(true)
+                  else setError(e instanceof Error ? e.message : 'The checklist could not be made. Try again.')
+                })
+              }}
+            >
+              Download my submission checklist
+            </button>
+          </div>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="row">
             <button className="primary" onClick={() => dialog.current?.close()}>
               Done

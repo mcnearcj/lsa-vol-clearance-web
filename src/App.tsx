@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BugReport } from './components/BugReport'
+import { downloadChecklist } from './checklistDownload'
 import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
@@ -9,7 +10,7 @@ import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
 import { standing, type Standing } from './dates'
 import { saveFile } from './save'
-import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
+import { isStaleBuildError, STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, personName, type FormId, type Progress, type Profile } from './types'
 
@@ -271,6 +272,16 @@ export default function App() {
               </div>
               <div className="bar" role="progressbar" aria-label="Checklist progress" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
                 <div style={{ width: `${pct}%` }} />
+              </div>
+              <div className="row">
+                <button
+                  className="ghost small-btn"
+                  onClick={() =>
+                    downloadChecklist(profile, progress).catch((e) => (isStaleBuildError(e) ? setStale(true) : setMessage('The checklist could not be made. Try again.')))
+                  }
+                >
+                  Print my submission checklist
+                </button>
               </div>
               {sync !== 'unavailable' && (
                 <p className="sync-status">
@@ -559,7 +570,7 @@ export default function App() {
         )}
       </main>
 
-      <SignDialog open={signOpen} profile={profile} onClose={() => setSignOpen(false)} onEditInfo={() => setTab('info')} onSigned={markSigned} />
+      <SignDialog open={signOpen} profile={profile} progress={progress} onClose={() => setSignOpen(false)} onEditInfo={() => setTab('info')} onSigned={markSigned} />
 
       <footer className="foot">
         <p>

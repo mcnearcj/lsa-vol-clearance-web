@@ -78,6 +78,8 @@ export interface Requirement {
   form?: { id: FormId; label: string }
   /** Reference PDFs from the diocese (instructions, originals). */
   references?: { label: string; file: string }[]
+  /** What the volunteer hands in for this item, for the submission checklist. */
+  handIn: string
 }
 
 /** The Background Check Authorization asks only employees (any role other than volunteer) for an SSN. */
