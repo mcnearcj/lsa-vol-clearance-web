@@ -48,6 +48,11 @@ Both are optional. Without them the Sync tab offers a backup file, and "Report a
    [`supabase/bug_report_emails.sql`](supabase/bug_report_emails.sql), and run it in the SQL Editor. The key is kept in
    Supabase Vault. Emails are capped at 20 an hour, and reports are always saved even if an email fails.
 
+Free Supabase projects pause after about a week with little activity, which turns off sync and bug reports (the rest of
+the site keeps working). `.github/workflows/keep-supabase-awake.yml` makes one small read every 3 days to prevent that,
+and fails (so GitHub emails you) if the project is already paused. GitHub turns scheduled workflows off after 60 days
+with no commits; re-enable it under Actions → Keep Supabase awake.
+
 Sign-in emails come from Supabase's built-in sender, and the site tells people so. To send them from your own
 address (and edit the email templates), set up custom SMTP under **Authentication → Emails → SMTP Settings**, then
 update the sender named in `src/components/CloudPanel.tsx` and the Help page FAQ in `src/App.tsx`.
