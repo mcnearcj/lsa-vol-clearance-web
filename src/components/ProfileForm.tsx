@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { allFormFields } from '../data/formFields'
+import { findSchool, schools } from '../data/schools'
 import { personName, type Profile } from '../types'
 
 interface Props {
@@ -68,7 +69,27 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
         <legend>Where you serve</legend>
         <p className="used-on">On every form</p>
         <div className="grid">
-          {text('siteName', 'Parish or school', { placeholder: 'St. Joseph' })}
+          <label className="field">
+            <span>Parish or school</span>
+            <input
+              id="p-siteName"
+              list="diocese-schools"
+              value={profile.siteName}
+              onChange={(e) => {
+                // Picking a diocesan school from the suggestions fills in its city and the location type too.
+                const school = findSchool(e.target.value)
+                onChange(school ? { ...profile, siteName: school.name, siteCity: school.city, locationType: 'School' } : { ...profile, siteName: e.target.value })
+              }}
+            />
+            <datalist id="diocese-schools">
+              {schools.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.city}
+                </option>
+              ))}
+            </datalist>
+            <small>Start typing a diocesan school to pick it, or type your parish.</small>
+          </label>
           {text('siteCity', 'City', { placeholder: 'Bethlehem' })}
           {choice('locationType', 'Location type', [
             ['Parish', 'Parish'],

@@ -83,7 +83,7 @@ in `src/components/CloudPanel.tsx` and the Help page FAQ in `src/App.tsx`.
 
 ## Hosting your own copy
 
-1. Fork this repository and set your school's name, city and coordinator (LSEC) in
+1. Fork this repository and set your school's name and coordinator (LSEC) in
    [`src/data/site.ts`](src/data/site.ts).
 2. Under Settings → Pages, choose **GitHub Actions**. Every push to `main` runs the linter and tests, builds, and
    deploys (`.github/workflows/deploy.yml`). Or run `npm run build` and upload `dist/` to any web host.
@@ -101,7 +101,8 @@ page (policies and acknowledgment forms), plus the state's NSOR application.
 
 | When this changes… | Edit |
 | --- | --- |
-| The school, its city, its LSEC, or which diocese checklist it follows | `src/data/site.ts` |
+| The school, its LSEC, or which diocese checklist it follows | `src/data/site.ts` |
+| The list of diocesan schools suggested on My info | `src/data/schools.ts` |
 | Checklist items: steps, links, renewal periods | `src/data/requirements.ts` |
 | The signable forms: labels, policy links, notes | `src/data/forms.ts` |
 | A blank form or instruction sheet | Replace the file in `public/forms/` (same name) |
@@ -124,7 +125,7 @@ npm run build    # type-check and build the static site into dist/
 - `public/forms/`: the diocese's and state's PDFs (blank forms the site fills in, and instruction sheets it links to)
 - `src/App.tsx`: page layout, tabs, checklist, Sync and Help pages
 - `src/components/`: checklist card, Forms to sign, My info, sync panel, bug report form
-- `src/data/`: the school (`site.ts`), checklist items, forms, the fields each form uses, the submission checklist
+- `src/data/`: the school (`site.ts`), the diocese's schools (`schools.ts`), checklist items, forms, the fields each form uses, the submission checklist
 - `src/pdf/`: form filling and the submission checklist PDF
 - `src/cloud/`: Supabase client, encryption, merging, and the on-device key store
 - `supabase/`: SQL for the tables, access rules and bug report emails

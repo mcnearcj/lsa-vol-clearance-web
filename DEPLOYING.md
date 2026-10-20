@@ -188,7 +188,7 @@ address:
 
 Before going live, check these places for the school and the old address:
 
-- [`src/data/site.ts`](src/data/site.ts): school name, city and LSEC contact.
+- [`src/data/site.ts`](src/data/site.ts): school name and LSEC contact.
 - The "Live site" line at the top of the [README](README.md).
 - `src/components/BugReport.tsx` and the links in `src/App.tsx` point to this GitHub repository (for reporting problems
   when Supabase isn't set up, and the "source code" link). Change them if the code moves to another repository.

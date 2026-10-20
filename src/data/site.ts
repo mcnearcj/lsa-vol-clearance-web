@@ -2,8 +2,6 @@
 
 export const site = {
   schoolName: 'La Salle Academy',
-  schoolCity: 'Shillington',
-  locationType: 'School' as const,
   /** The diocese's checklist this site follows, and where its role-specific checklists live. */
   checklistName: 'School Volunteer Requirements Checklist',
   checklistRevised: '7/31/2025',

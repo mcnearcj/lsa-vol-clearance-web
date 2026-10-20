@@ -52,3 +52,11 @@ describe('ssnAsTyped', () => {
     expect(ssnAsTyped('123 45 6789 0')).toBe('123-45-6789') // spaces and extra digits ignored
   })
 })
+
+describe('diocesan schools', () => {
+  it('finds a school by name, ignoring case and extra spaces', async () => {
+    const { findSchool } = await import('./schools')
+    expect(findSchool(' la salle academy ')).toEqual({ name: 'La Salle Academy', city: 'Shillington' })
+    expect(findSchool('St. Joseph')).toBeUndefined()
+  })
+})
