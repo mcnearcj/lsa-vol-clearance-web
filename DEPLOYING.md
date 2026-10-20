@@ -2,14 +2,14 @@
 
 The site is a set of static files: one `index.html`, a folder of JavaScript, CSS and fonts, and the PDFs in `forms/`.
 There's no server code, database or PHP of its own, so any web server or static host can serve it. This guide covers
-building it, the hosting options (including the school's own domain, **lsabear.com**), server settings, sync, and
+building it, the hosting options (including the school's own domain, **lsabear.com**), server settings, Cloud sync, and
 moving volunteers over from the current GitHub Pages address.
 
 ## What the host needs
 
 | Requirement | Why |
 | --- | --- |
-| **HTTPS** | Required. Browsers only allow the encryption used by Sync (Web Crypto) on secure pages, and volunteers type personal details. Plain `http://` only works on `localhost`. |
+| **HTTPS** | Required. Browsers only allow the encryption used by Cloud sync (Web Crypto) on secure pages, and volunteers type personal details. Plain `http://` only works on `localhost`. |
 | Serve static files | Nothing runs on the server. |
 | Correct file types | `.js` → `text/javascript`, `.css` → `text/css`, `.woff2` → `font/woff2`, `.pdf` → `application/pdf`, `.svg` → `image/svg+xml`. Most servers already do this. |
 | Any path | The build uses relative links, so it works at a domain's root (`https://clearances.lsabear.com/`) or in a folder (`https://example.org/volunteers/`) without changes. |
@@ -24,7 +24,7 @@ You need [Node.js](https://nodejs.org) 22 or newer.
 git clone https://github.com/mcnearcj/lsa-vol-clearance-web.git
 cd lsa-vol-clearance-web
 npm ci
-cp .env.example .env.local   # only if you're turning on Sync; fill in the two values (see section 4)
+cp .env.example .env.local   # only if you're turning on Cloud sync; fill in the two values (see section 4)
 npm test                     # optional: make sure everything passes
 npm run build
 ```
@@ -159,7 +159,7 @@ whole zone, exclude the app's hostname or path from it, or purge the cache after
 ### Security headers (optional)
 
 The site works with strict headers. If the server or Cloudflare adds a Content Security Policy, it must allow the
-Supabase project (for Sync and bug reports) and the filled-in PDFs, which open as `blob:` links.
+Supabase project (for Cloud sync and bug reports) and the filled-in PDFs, which open as `blob:` links.
 For example, with your own project URL:
 
 ```
@@ -167,9 +167,9 @@ Content-Security-Policy: default-src 'self'; connect-src 'self' https://YOUR-PRO
 ```
 
 `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and HSTS are all fine. Test the
-whole flow (fill in info, make forms, open and download them, sign in to Sync, report a problem) after adding a policy.
+whole flow (fill in info, generate the documents, open and download them, sign in to Cloud sync, report a problem) after adding a policy.
 
-## 4. Sync and bug reports (Supabase)
+## 4. Cloud sync and bug reports (Supabase)
 
 Optional; see "Setting up Supabase" in the [README](README.md) for creating the project. When the site moves to a new
 address:
@@ -198,12 +198,12 @@ Before going live, check these places for the school and the old address:
 Browsers keep saved data **per web address**. Info and progress saved at
 `https://mcnearcj.github.io/lsa-vol-clearance-web/` won't appear at a new address on its own:
 
-- **Volunteers who use Sync** just sign in at the new address with the same email and password, and everything comes
+- **Volunteers who use Cloud sync** just sign in at the new address with the same email and password, and everything comes
   back.
-- **Everyone else** has to enter their info again and re-mark finished items, or turn on Sync at the old address first
+- **Everyone else** has to enter their info again and re-mark finished items, or turn on Cloud sync at the old address first
   and then sign in at the new one.
 
-Suggested switch-over: announce the new address, ask current users to turn on Sync before the date, then keep the old
+Suggested switch-over: announce the new address, ask current users to turn on Cloud sync before the date, then keep the old
 address running for a few weeks. If you no longer want it live, turn off GitHub Pages in the repository settings once
 everyone has moved.
 
@@ -211,8 +211,8 @@ everyone has moved.
 
 - [ ] The site loads at the new address over **https** with no browser warnings.
 - [ ] Checklist instructions open their PDFs (from `forms/`).
-- [ ] Forms to sign: making a PDF works, and Open and Download both work.
+- [ ] Forms to sign: "Generate my documents" works, and Open and Download both work.
 - [ ] Reloading the page keeps the info you entered.
-- [ ] Sync (if set up): create an account, follow the email link, and confirm it opens the new address.
+- [ ] Cloud sync (if set up): create an account, follow the email link, and confirm it opens the new address.
 - [ ] Report a problem: a test report shows up in Supabase (and in your inbox, if emails are set up).
 - [ ] After uploading a new build, the page shows the new version (no stale `index.html` from a cache).

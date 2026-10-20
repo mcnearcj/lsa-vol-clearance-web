@@ -19,18 +19,19 @@ The School Volunteer Requirements Checklist (revised 7/31/2025) has 12 items han
 
 ## What it does today
 
-The prototype is live at [mcnearcj.github.io/lsa-vol-clearance-web](https://mcnearcj.github.io/lsa-vol-clearance-web/), and the source is public at [github.com/mcnearcj/lsa-vol-clearance-web](https://github.com/mcnearcj/lsa-vol-clearance-web). It is set up for La Salle Academy and labeled an early prototype.
+The prototype is live at [mcnearcj.github.io/lsa-vol-clearance-web](https://mcnearcj.github.io/lsa-vol-clearance-web/), and the source is public at [github.com/mcnearcj/lsa-vol-clearance-web](https://github.com/mcnearcj/lsa-vol-clearance-web). It is set up for La Salle Academy and labeled an early prototype. A banner tells volunteers that saved progress or accounts could be reset during the prototype, so they keep their own record too.
 
 | Feature | What the volunteer gets |
 | --- | --- |
 | Checklist | PATCH, Child Abuse History, FBI fingerprints, NSOR, Protecting God's Children, Mandated Reporter and the driver check, each with steps, links, a "done" date and a renewal date |
+| My info | Entered once and reused on every form. It suggests the diocese's 34 schools as the volunteer types and fills in the town |
 | Forms to sign | Six forms filled in from their details: Sexual Abuse, Code of Conduct, Social Media and CPSL acknowledgments, the Background Check Authorization and the state NSOR application (CY 1001) |
 | Signing | Print and sign by hand (the default), or sign on screen by drawing or typing |
 | SSN | Optional, entered only when making forms, placed only where a form needs it, never saved or sent |
-| Submission checklist | A separate PDF to keep, listing what goes to the LSEC, what goes to the state, and what is still missing |
-| Sync | Optional, end-to-end encrypted, across devices and browser tabs |
+| Submission checklist | A separate one-page PDF to keep, listing what goes to the LSEC, what goes to the state, and what is still missing, based on what the volunteer marked |
+| Cloud sync | Optional and end-to-end encrypted, across devices and browser tabs. The site works fully without it; it is a proof of concept that progress could be tracked if the diocese adopted the site |
 | Shared computers | Every page shows whose details are loaded, with a one-click "Not you?" reset |
-| Help | The school LSEC and the diocesan contact, FAQs and a bug report form |
+| Help and Tech info | Who to ask (the school LSEC and the diocesan contact), FAQs, a bug report form, and how the site and cloud sync work |
 
 The forms come straight from the diocese's [Safe Environment Policies](https://www.allentowndiocese.org/safe-environment-policies) page. The site links to the official instruction sheets rather than rewriting them.
 
@@ -47,12 +48,12 @@ Everything personal happens inside the browser. The three services on the right 
 | Web app | React 19, TypeScript and Vite. The build is plain HTML, JavaScript and CSS files with relative paths | Any web server: IIS, Apache or nginx on premises, Azure Static Web Apps, AWS S3, or a subfolder of an existing diocese site | Copy the `dist/` folder. No runtime, database or server code is needed |
 | Hosting | GitHub Pages, free | Any static host, under a diocese domain | Point DNS at it and update the sign-in redirect URL. [`DEPLOYING.md`](../DEPLOYING.md) has the steps |
 | Form filling | pdf-lib, running in the browser | Stays in the browser, so no server change is needed | New form revisions: replace the PDF in `public/forms/`, then adjust field positions if the layout moved |
-| Requirements and forms lists | Data files (`requirements.ts`, `forms.ts`, `site.ts`) | One configuration per school, parish or role checklist | Edit data, not code. A role picker could select among the diocese's checklists |
+| Requirements and forms lists | Data files (`requirements.ts`, `forms.ts`, `site.ts`, `schools.ts`) | One configuration per school, parish or role checklist | Edit data, not code. A role picker could select among the diocese's checklists |
 | Sync storage | Supabase (hosted Postgres) with one encrypted record per person | Self-hosted Supabase (open source), or any database behind a small API that stores one opaque blob per user | Data is encrypted before it leaves the device, so the backend only stores and returns ciphertext. Replacing it means rewriting one client module |
 | Sign-in | Supabase email and password | The diocese's own identity provider (for example Microsoft Entra ID or Google Workspace) | Possible. The encryption key comes from the password today, so single sign-on would need a separate key step. See Risks |
 | Email | Supabase's default sender for sign-in links; Resend for bug reports | The diocese's mail server over SMTP | Settings in Supabase, with no code change |
 | Bug reports | A write-only database table plus an email | The diocese help desk's email or ticket system | Change one form target |
-| Build and deploy | GitHub Actions: lint, 42 unit tests, build, deploy | Azure DevOps, GitLab or any CI that runs `npm` | Three commands: `npm ci`, `npm test`, `npm run build` |
+| Build and deploy | GitHub Actions: lint, 45 unit tests, build, deploy | Azure DevOps, GitLab or any CI that runs `npm` | Three commands: `npm ci`, `npm test`, `npm run build` |
 
 Sync and bug reports are optional. With no backend configured, the checklist, forms and signing still work fully.
 
@@ -109,7 +110,7 @@ The diocese can adopt this in three phases, stopping after any one of them. Each
 ### Phase 3: Online submission and coordinator dashboard
 
 - Volunteers submit signed forms and certificates through the site instead of paper or email.
-- LSECs get a dashboard showing each volunteer's status and upcoming renewals, with automatic reminders.
+- LSECs get a dashboard showing each volunteer's status and upcoming renewals, with automatic reminders. Cloud sync already shows a volunteer's progress can be kept online securely.
 - Payment codes for background checks are shown only to signed-in volunteers of the right school, not published.
 - Optional sign-in through the diocese's identity provider for staff.
 
