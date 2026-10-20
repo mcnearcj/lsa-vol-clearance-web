@@ -39,13 +39,15 @@ describe('fillForm', () => {
     const { bytes } = await fillForm('nsor', sample, load)
     const form = (await PDFDocument.load(bytes)).getForm()
     const text = (name: string) => form.getTextField(name).getText() ?? ''
-    expect(text('Full Name')).toBe('Testperson, Jordan Q')
-    expect(text('Social Security Number XXXXXXXXX 1')).toBe('') // the SSN row
-    expect(text('Social Security Number XXXXXXXXX 2')).toBe('07/04/1985') // the date of birth row
-    expect(text('Daytime Phone Number XXXXXXXXXX 1')).toBe('610-555-0123')
-    expect(text('Daytime Phone Number XXXXXXXXXX 2')).toBe('123 Main Street, Apt 4B') // the mailing address row
-    expect(text('City State and Zip Code')).toBe('Bethlehem, PA 18015')
-    expect(form.getCheckBox('Volunteer of a childcare provider groupdaycare home or family child care home').isChecked()).toBe(true)
+    expect(text('Name')).toBe('Testperson, Jordan Q')
+    expect(text('SSN')).toBe('')
+    expect(text('DOB')).toBe('07/04/1985')
+    expect(text('Phone')).toBe('610-555-0123')
+    expect(text('Address')).toBe('123 Main Street, Apt 4B')
+    expect(text('Text Field 5')).toBe('Bethlehem, PA 18015') // city, state, ZIP
+    expect(text('Text Field 7')).toBe('jordan@example.com') // e-mail
+    expect(form.getCheckBox('Check Box 4').isChecked()).toBe(true) // volunteer
+    expect(form.getCheckBox('Check Box 1').isChecked()).toBe(false)
   })
 
   it('copes with names the PDF fonts can’t draw', async () => {
@@ -84,7 +86,7 @@ describe('fillAll', () => {
   it('leaves the SSN box blank unless one is given, and formats an SSN as XXX-XX-XXXX', async () => {
     const { bytes } = await fillForm('nsor', sample, load)
     const unsigned = (await PDFDocument.load(bytes)).getForm()
-    expect(unsigned.getTextField('Social Security Number XXXXXXXXX 1').getText() ?? '').toBe('')
+    expect(unsigned.getTextField('SSN').getText() ?? '').toBe('')
     expect(ssnFmt('123456789')).toBe('123-45-6789')
     expect(ssnFmt('123-45-6789')).toBe('123-45-6789')
   })

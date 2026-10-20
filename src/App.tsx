@@ -425,7 +425,7 @@ export default function App() {
               <p>
                 This site follows the diocese’s{' '}
                 <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
-                  Parish &amp; School Volunteer Requirements Checklist (PDF)
+                  {site.checklistName} (PDF, revised {site.checklistRevised})
                 </a>
                 . Its policies and forms come from the diocese’s{' '}
                 <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
@@ -536,7 +536,7 @@ export default function App() {
           <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
             Safe Environment Policies page
           </a>
-          ; requirements from its checklist revised 2/14/2023.
+          ; requirements from its {site.checklistName}, revised {site.checklistRevised}.
         </p>
         <p>
           <button className="link" onClick={openReport}>

@@ -3,7 +3,7 @@
 **Live site:** https://mcnearcj.github.io/lsa-vol-clearance-web/ (early prototype)
 
 A web app that helps Diocese of Allentown parish and school volunteers work through the Safe Environment
-[Parish & School Volunteer Requirements Checklist](public/forms/requirements-checklist.pdf) and fill in the forms.
+[School Volunteer Requirements Checklist](public/forms/requirements-checklist.pdf) (revised 7/31/2025) and fill in the forms.
 It is a volunteer-made helper, not an official diocesan site.
 
 ## What it does
@@ -76,7 +76,7 @@ Set your school's name, city and coordinator in `src/data/site.ts`. To offer syn
 | When this changes… | Edit |
 | --- | --- |
 | The school, its city, or its LSEC (coordinator) | `src/data/site.ts` |
-| Checklist items, steps, links, renewal periods | `src/data/requirements.ts` |
+| Checklist items, steps, links, renewal periods | `src/data/requirements.ts` (and the checklist name/date in `src/data/site.ts`) |
 | A blank form or instruction sheet | Replace the file in `public/forms/` (same name), from the diocese's Safe Environment Policies page |
 | A form's layout | Field positions in `src/pdf/fill.ts`, then check a filled-in copy by eye |
 | Which details a form uses | `src/data/formFields.ts` |

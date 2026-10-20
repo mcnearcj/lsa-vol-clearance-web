@@ -1,9 +1,9 @@
 import type { GroupId, Requirement } from '../types'
 import { site } from './site'
 
-// Sources: the diocese's Safe Environment Policies page (site.policiesUrl), which has the current policies and
-// acknowledgment forms; the "Safe Environment Parish & School Volunteer Requirements Checklist" (rev. 2/14/2023);
-// and the diocese's step-by-step instruction sheets. Keep this in sync with those documents.
+// Sources: the diocese's "Safe Environment School Volunteer Requirements Checklist" (rev. 7/31/2025, from its
+// Safe Environment Requirements page); its Safe Environment Policies page (site.policiesUrl) for current policies and
+// acknowledgment forms; and its step-by-step instruction sheets. Keep this in sync with those documents.
 
 const forms = (file: string) => `forms/${file}`
 /** Where the diocese's Safe Environment page links its policies and forms. */
@@ -238,14 +238,14 @@ export const requirements: Requirement[] = [
     note: 'You can add your Social Security Number when you make your forms, or write it on the printed form. The site never stores it.',
     links: [
       {
-        label: 'PA DHS NSOR application (original)',
-        href: 'https://www.dhs.pa.gov/KeepKidsSafe/Resources/Documents/NSOR.APPLICATION.05.02.22.pdf',
+        label: 'PA DHS NSOR application, CY 1001 (original)',
+        href: 'https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/keepkidssafe/resources/documents/2024-06-14-cy-1001-national-sex-offender-registry-nsor-application-english.pdf',
       },
     ],
     steps: [
       'Make the application under “Forms to sign” on this page. Your information is filled in and the “Volunteer” purpose box is checked. You can add your Social Security Number and signature there, or write them on the printed form.',
       'Submit it one of three ways: mail to Clearance Verification Unit, ChildLine, Department of Human Services, PO Box 8170, Harrisburg, PA 17105-8170; or scan and email to RA-PWNSOR@pa.gov (subject: “NSOR Verification Applicant Last Name”); or hand deliver to the drop box at 2525 North 7th Street, Harrisburg, PA 17110.',
-      'Keep a copy as proof of submission. Questions: Clearance Verification Unit, 877-371-5422.',
+      'Keep a copy as proof of submission. The state emails your verification letter (encrypted) in about 14 days; give a copy to your LSEC. Questions: Clearance Verification Unit, 877-371-5422.',
     ],
     form: { id: 'nsor', label: 'NSOR Application' },
   },

@@ -195,23 +195,22 @@ async function fillNsor(bytes: Uint8Array, p: Profile, o: FillOptions = {}): Pro
     field.setFontSize(10.5)
   }
 
-  // The PDF's internal field names don't match the labels, so these are mapped by position on the page.
-  text('Full Name', [p.lastName.trim(), [p.firstName.trim(), p.middleName.trim().slice(0, 1)].filter(Boolean).join(' ')].filter(Boolean).join(', '))
-  // "Social Security Number XXXXXXXXX 1" is the SSN row: left blank on purpose.
+  // The state's CY 1001 (5/24). Some boxes have generic names, so those are mapped by their position on the page.
+  text('Name', [p.lastName.trim(), [p.firstName.trim(), p.middleName.trim().slice(0, 1)].filter(Boolean).join(' ')].filter(Boolean).join(', '))
   const { mm, dd, yyyy } = dobParts(p.dob)
-  text('Social Security Number XXXXXXXXX 2', mm ? `${mm}/${dd}/${yyyy}` : '')
-  text('Daytime Phone Number XXXXXXXXXX 1', phoneFmt(p.phone))
-  text('Daytime Phone Number XXXXXXXXXX 2', [p.street.trim(), p.apt.trim()].filter(Boolean).join(', '))
-  text('City State and Zip Code', [p.city.trim(), [p.state.trim(), p.zip.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', '))
-  text('Email Address', p.email)
-  form.getCheckBox('Volunteer of a childcare provider groupdaycare home or family child care home').check()
+  text('DOB', mm ? `${mm}/${dd}/${yyyy}` : '')
+  text('Phone', phoneFmt(p.phone))
+  text('Address', [p.street.trim(), p.apt.trim()].filter(Boolean).join(', '))
+  text('Text Field 5', [p.city.trim(), [p.state.trim(), p.zip.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ')) // city, state, ZIP
+  text('Text Field 7', p.email) // e-mail
+  form.getCheckBox('Check Box 4').check() // "Volunteer of a child-care provider…"
 
-  if (o.ssn) text('Social Security Number XXXXXXXXX 1', ssnFmt(o.ssn)) // the SSN row
+  if (o.ssn) text('SSN', ssnFmt(o.ssn))
   if (o.signed) {
-    text('Date', o.signed.date)
-    // Signature box: x 98, y 35, 225 x 22 (from the bottom of the page).
+    text('Text Field 10', o.signed.date) // date, beside the signature
+    // The signature line is a text box ("Text Field 9": x 100, y 41, 256 x 19 from the bottom); draw the image on it.
     const page = doc.getPage(0)
-    await drawSignature(doc, page, o.signed.signature, { x: 100, top: page.getHeight() - 35 - 24, w: 220, h: 24 })
+    await drawSignature(doc, page, o.signed.signature, { x: 104, top: page.getHeight() - 41 - 20, w: 240, h: 20 })
   }
 
   form.updateFieldAppearances(await doc.embedFont(StandardFonts.Helvetica))
