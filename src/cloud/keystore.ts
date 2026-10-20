@@ -1,4 +1,4 @@
-// Remembers the backup key on this device so people aren't asked for their password after every reload.
+// Remembers the sync encryption key on this device so people aren't asked for their password after every reload.
 // Keys are stored as non-extractable CryptoKeys: the browser can use them but never hands back the raw key.
 // The info they protect is already stored readable in this browser, so this adds no new exposure.
 

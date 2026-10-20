@@ -528,7 +528,7 @@ export function CloudPanel({ profile, progress, onRestore, onRemoteUpdate, onSta
     return (
       <section className="panel">
         <h3>Sync</h3>
-        <p>Sync isn’t turned on for this site. Use a backup file instead.</p>
+        <p>Sync isn’t turned on for this site. Your info stays in this browser.</p>
       </section>
     )
   }

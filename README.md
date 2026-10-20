@@ -52,7 +52,7 @@ A static React + TypeScript site built with Vite and hosted on GitHub Pages. The
 
 ## Setting up Supabase (sync and bug reports)
 
-Optional. Without it, the Sync tab offers a backup file and "Report a problem" offers a pre-filled GitHub issue.
+Optional. Without it, the Sync tab explains that sync isn't turned on, and "Report a problem" offers a pre-filled GitHub issue.
 
 1. Create a free Supabase project.
 2. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). It creates the `vault` table (one encrypted row

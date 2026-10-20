@@ -298,7 +298,7 @@ textarea { min-height: 64px; resize: vertical; }
 .card-foot { display: flex; flex-direction: column; gap: 10px; }
 .notes { display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; font-weight: 600; color: var(--muted); }
 
-/* Backup status */
+/* Sync status */
 .sync-status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 0.9rem; color: var(--muted); }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--line); display: inline-block; }
 .dot.ok { background: var(--ok); }

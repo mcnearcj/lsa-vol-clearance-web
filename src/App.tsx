@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { BugReport } from './components/BugReport'
 import { CloudPanel, type SyncStatus } from './components/CloudPanel'
 import { ProfileForm } from './components/ProfileForm'
@@ -8,7 +8,6 @@ import { allFormFields } from './data/formFields'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
 import { standing } from './dates'
-import { saveFile } from './save'
 import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, personName, type Progress, type Profile } from './types'
@@ -86,7 +85,6 @@ export default function App() {
     setSyncAt(at)
     setSyncEmail(email)
   }, [])
-  const fileRef = useRef<HTMLInputElement>(null)
 
   // Where the person was when they chose "Report a problem", attached to the report.
   const [reportFrom, setReportFrom] = useState<string>('help')
@@ -130,20 +128,6 @@ export default function App() {
   const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
   const who = personName(profile)
   const hasData = Boolean(who) || Object.keys(progress).length > 0
-
-  const exportBackup = () => saveFile('volunteer-clearances-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
-
-  const importBackup = async (file: File) => {
-    try {
-      const data = JSON.parse(await file.text())
-      if (!data.profile && !data.progress) throw new Error()
-      if (data.profile) setProfile({ ...emptyProfile, ...data.profile })
-      if (data.progress) setProgress(data.progress)
-      setMessage('Backup restored. Your info and checklist are back.')
-    } catch {
-      setMessage('That file isn’t a backup from this site. Choose the .json file you downloaded here.')
-    }
-  }
 
   const eraseAll = () => {
     clearAllStored()
@@ -397,34 +381,6 @@ export default function App() {
             }}
           />
 
-          <section className="panel">
-            <h3>Backup file</h3>
-            <p>Prefer not to sign in? Download a file and keep it somewhere private. It contains your name, address and the other details you entered.</p>
-            <div className="row">
-              <button className="secondary" onClick={exportBackup}>
-                Download backup file
-              </button>
-              <button className="ghost" onClick={() => fileRef.current?.click()}>
-                Restore from a file
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="application/json,.json"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) void importBackup(f)
-                  e.target.value = ''
-                }}
-              />
-            </div>
-            {message && tab === 'sync' && (
-              <p className="notice ok" role="status">
-                {message}
-              </p>
-            )}
-          </section>
         </div>
 
         {tab === 'help' && (
