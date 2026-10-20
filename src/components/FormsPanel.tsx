@@ -32,7 +32,7 @@ const SCRIPT_FONT = '"Dancing Script Variable", "Brush Script MT", cursive'
 
 const formReq = (id: FormId) => requirements.find((r) => r.form?.id === id && r.id === id)!
 const formNotes: Partial<Record<FormId, string>> = {
-  bgauth: 'Lets the diocese run your background checks.',
+  bgauth: 'Lets the diocese run your background checks. Give it to your LSEC, or mail it to Janice Woolley, Audit & Training Supervisor, Diocese of Allentown, PO Box F, Allentown PA 18105.',
   nsor: 'The state’s form: you send this one to the state, not your LSEC.',
 }
 
