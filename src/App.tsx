@@ -319,7 +319,12 @@ export default function App() {
         <div hidden={tab !== 'sync'}>
           <div className="page-intro">
             <h2>Cloud sync</h2>
-            <p>Sign in to keep your info and checklist in sync across your phone and computer, and safe if you clear your browser.</p>
+            <p>
+              <strong>Optional.</strong> You can use the whole site without an account. Sign in only if you want your info and checklist kept in step across your phone and computer, and safe if you clear your browser.{' '}
+              <button className="link" onClick={() => setTab('tech')}>
+                How cloud sync works
+              </button>
+            </p>
           </div>
 
           {/* Stays mounted so an unlocked sync session survives switching tabs. */}
