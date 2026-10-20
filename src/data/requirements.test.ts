@@ -39,3 +39,13 @@ describe('ssnOnAuthorization', () => {
     expect(ssnOnAuthorization({ ...emptyProfile, position: 'Employee' })).toBe(true)
   })
 })
+
+describe('ssnAsTyped', () => {
+  it('adds dashes as digits are typed, whether or not the person types them', async () => {
+    const { ssnAsTyped } = await import('../ssn')
+    expect(['1', '123', '1234', '12345', '123456', '123456789'].map(ssnAsTyped)).toEqual(['1', '123', '123-4', '123-45', '123-45-6', '123-45-6789'])
+    expect(ssnAsTyped('123-45-6789')).toBe('123-45-6789')
+    expect(ssnAsTyped('123-')).toBe('123') // backspacing over a dash
+    expect(ssnAsTyped('123 45 6789 0')).toBe('123-45-6789') // spaces and extra digits ignored
+  })
+})

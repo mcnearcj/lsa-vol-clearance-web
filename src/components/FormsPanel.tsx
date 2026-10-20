@@ -5,6 +5,7 @@ import { fieldLabels, formFields } from '../data/formFields'
 import { requirements } from '../data/requirements'
 import { site } from '../data/site'
 import { formatDate, todayISO } from '../dates'
+import { ssnAsTyped } from '../ssn'
 import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
 import { personName, ssnOnAuthorization, type FormId, type ItemProgress, type Profile, type Progress } from '../types'
 
@@ -369,7 +370,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
               placeholder="123-45-6789"
               className={showSsn ? '' : 'masked'}
               value={ssn}
-              onChange={(e) => setSsn(e.target.value.replace(/[^\d-]/g, ''))}
+              onChange={(e) => setSsn(ssnAsTyped(e.target.value))}
               aria-describedby="ssn-help"
               aria-invalid={!ssnOk}
             />
