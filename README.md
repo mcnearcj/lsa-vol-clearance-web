@@ -118,6 +118,7 @@ npm run build    # type-check and build the static site into dist/
 
 ### Project layout
 
+- `docs/PROPOSAL.md`: a proposal for diocesan IT to adopt the site
 - `public/forms/`: the diocese's and state's PDFs (blank forms the site fills in, and instruction sheets it links to)
 - `src/App.tsx`: page layout, tabs, checklist, Sync and Help pages
 - `src/components/`: checklist card, Forms to sign, My info, sync panel, bug report form

@@ -473,6 +473,14 @@ export default function App() {
                   </a>
                   , including how forms are filled in and how sync is encrypted.
                 </dd>
+                <dt>Could the diocese or another school use this?</dt>
+                <dd>
+                  Yes. Any school or parish can host its own copy, and there’s a{' '}
+                  <a href="https://github.com/mcnearcj/lsa-vol-clearance-web/blob/main/docs/PROPOSAL.md" target="_blank" rel="noreferrer noopener">
+                    proposal for diocesan IT
+                  </a>{' '}
+                  covering how it works, privacy, costs and ways to adopt it.
+                </dd>
               </dl>
             </section>
 
