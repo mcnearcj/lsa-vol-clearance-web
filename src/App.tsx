@@ -3,6 +3,7 @@ import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { requirements } from './data/requirements'
 import { standing } from './dates'
+import { saveFile } from './save'
 import { clearAllStored, useStored } from './storage'
 import { emptyProfile, type Progress, type Profile } from './types'
 
@@ -19,30 +20,28 @@ export default function App() {
   const needsAttention = counted.filter((r) => ['expiring', 'expired'].includes(standing(r, progress[r.id]).standing))
   const pct = counted.length ? Math.round((complete / counted.length) * 100) : 0
 
-  const exportBackup = () => {
-    const blob = new Blob([JSON.stringify({ profile, progress }, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'volunteer-clearance-backup.json'
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
-  }
+  const [message, setMessage] = useState('')
+  const [confirmErase, setConfirmErase] = useState(false)
+
+  const exportBackup = () => void saveFile('volunteer-clearance-backup.json', JSON.stringify({ profile, progress }, null, 2), 'application/json')
 
   const importBackup = async (file: File) => {
     try {
       const data = JSON.parse(await file.text())
       if (data.profile) setProfile({ ...emptyProfile, ...data.profile })
       if (data.progress) setProgress(data.progress)
+      setMessage('Backup restored.')
     } catch {
-      alert('That file could not be read as a backup.')
+      setMessage('That file could not be read as a backup.')
     }
   }
 
   const eraseAll = () => {
-    if (!confirm('Erase your info and checklist progress from this browser? This cannot be undone.')) return
     clearAllStored()
     setProfile(emptyProfile)
     setProgress({})
+    setConfirmErase(false)
+    setMessage('Your data was erased from this browser.')
   }
 
   return (
@@ -130,10 +129,20 @@ export default function App() {
                   e.target.value = ''
                 }}
               />
-              <button className="danger" onClick={eraseAll}>
-                Erase my data
-              </button>
+              {confirmErase ? (
+                <>
+                  <button className="danger" onClick={eraseAll}>
+                    Yes, erase everything
+                  </button>
+                  <button onClick={() => setConfirmErase(false)}>Cancel</button>
+                </>
+              ) : (
+                <button className="danger" onClick={() => setConfirmErase(true)}>
+                  Erase my data
+                </button>
+              )}
             </div>
+            {message && <p role="status">{message}</p>}
             <p className="small">
               The backup file contains the information you entered (name, address, etc.). Keep it somewhere private.{' '}
               <a href={`${import.meta.env.BASE_URL}forms/requirements-checklist.pdf`} target="_blank" rel="noreferrer noopener">

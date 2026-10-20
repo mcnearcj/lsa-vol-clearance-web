@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { saveFile } from '../save'
 import { formatDate, standing, standingLabel, todayISO } from '../dates'
 import type { ItemProgress, Profile, Requirement, Status } from '../types'
 
@@ -14,15 +15,6 @@ const loadBytes = async (file: string) => {
   const res = await fetch(`${import.meta.env.BASE_URL}${file}`)
   if (!res.ok) throw new Error(`Could not load ${file}`)
   return new Uint8Array(await res.arrayBuffer())
-}
-
-function download(bytes: Uint8Array, filename: string) {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
 export function RequirementCard({ req, progress, profile, onChange, onNeedProfile }: Props) {
@@ -47,7 +39,7 @@ export function RequirementCard({ req, progress, profile, onChange, onNeedProfil
     try {
       const { fillForm } = await import('../pdf/fill')
       const { bytes, filename } = await fillForm(req.form.id, profile, loadBytes)
-      download(bytes, filename)
+      await saveFile(filename, bytes, 'application/pdf')
       if (cur.status === 'todo') onChange({ ...cur, status: 'started' })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong making the PDF.')
