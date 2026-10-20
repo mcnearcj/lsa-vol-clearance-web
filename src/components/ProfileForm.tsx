@@ -1,5 +1,4 @@
 import type { InputHTMLAttributes, ReactNode } from 'react'
-import { allFormFields } from '../data/formFields'
 import { personName, type Profile } from '../types'
 import { SchoolInput } from './SchoolInput'
 
@@ -11,8 +10,6 @@ interface Props {
 
 export function ProfileForm({ profile, onChange, onDone }: Props) {
   const set = <K extends keyof Profile>(key: K, value: Profile[K]) => onChange({ ...profile, [key]: value })
-  const filled = allFormFields.filter((k) => String(profile[k]).trim()).length
-  const total = allFormFields.length
 
   const text = (key: keyof Profile, label: string, props: InputHTMLAttributes<HTMLInputElement> = {}, hint?: ReactNode) => (
     <label className="field">
@@ -41,17 +38,6 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
       <div className="page-intro">
         <h2>{personName(profile) ? `My info: ${personName(profile)}` : 'My info'}</h2>
         <p>Enter this once and the site fills it into your forms. It saves automatically on this device as you type.</p>
-        <div className="meter" aria-live="polite">
-          <div className="bar" role="progressbar" aria-label="Details filled in" aria-valuenow={filled} aria-valuemin={0} aria-valuemax={total}>
-            <div style={{ width: `${(filled / total) * 100}%` }} />
-          </div>
-          <span>
-            <strong>
-              {filled} of {total}
-            </strong>{' '}
-            details the forms use
-          </span>
-        </div>
         <p className="callout neutral">Your Social Security Number isn’t kept here. Add it when you make your forms under “Forms to sign” (it’s never saved), or write it on the printed form by hand.</p>
       </div>
 

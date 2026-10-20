@@ -79,6 +79,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   const [stale, setStale] = useState(false)
   const [files, setFiles] = useState<ReadyFile[]>([])
   const [madeWithSsn, setMadeWithSsn] = useState(false)
+  const [madeMissing, setMadeMissing] = useState<string[]>([])
   // Whether the person opened or downloaded a copy (those live outside this page), and whether they just deleted.
   const [copiedOut, setCopiedOut] = useState(false)
   const [deleted, setDeleted] = useState<null | { copiedOut: boolean }>(null)
@@ -94,6 +95,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     urls.current = []
     setFiles([])
     setMadeWithSsn(false)
+    setMadeMissing([])
     setCopiedOut(false)
     setDeleted(null)
   }
@@ -219,6 +221,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
           url: asUrl(bytes),
         })
         setMadeWithSsn(Boolean(ssnUsed))
+        setMadeMissing(missing)
       }
       if (withChecklist) {
         const { bytes, filename } = await makeChecklist(profile, progress, { forms: chosen, signedOn })
@@ -405,6 +408,18 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
       {files.length > 0 && (
         <div className="ready" role="status">
           <h4>Your files are ready</h4>
+          {madeMissing.length > 0 && (
+            <div className="missing" role="alert">
+              <p>
+                Some info was missing, so these are blank on your forms: <strong>{madeMissing.join(', ')}</strong>. Write them in by hand, or add them in My info and make the files again.
+              </p>
+              <div className="row">
+                <button type="button" className="secondary" onClick={onEditInfo}>
+                  Add them in My info
+                </button>
+              </div>
+            </div>
+          )}
           <p className="small">
             They’re held only in this browser tab’s memory. Nothing was uploaded or saved. They’re erased when you delete them below, change your choices, or close this page.
           </p>

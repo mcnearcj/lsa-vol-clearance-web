@@ -14,9 +14,9 @@ export const fieldLabels: Partial<Record<keyof Profile, string>> = {
   email: 'Email',
   siteName: 'Parish or school',
   siteCity: 'Parish or school city',
-  residedInPA: 'Lived in PA more than a year',
+  residedInPA: 'Lived in PA 1+ year',
   locationType: 'Location type',
-  position: 'Diocesan position',
+  position: 'Your role',
 }
 
 const nameAndLocation: (keyof Profile)[] = ['firstName', 'lastName', 'siteName', 'siteCity']
@@ -36,6 +36,3 @@ export function missingFields(forms: FormId[], p: Profile): string[] {
   const keys = [...new Set(forms.flatMap((f) => formFields[f]))]
   return keys.filter((k) => !String(p[k]).trim()).map((k) => fieldLabels[k] ?? k)
 }
-
-/** Every field any form uses, for the completeness count on "My info". */
-export const allFormFields: (keyof Profile)[] = [...new Set(Object.values(formFields).flat())]

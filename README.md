@@ -18,7 +18,8 @@ official diocesan site. Another school or parish can host its own copy (see belo
   optionally add an SSN. Nothing downloads by itself: the site lists the files with Open and Download links. One PDF of
   the chosen forms, plus a separate one-page **submission checklist** for the volunteer to keep (what to hand in, to whom,
   and what is still outstanding, based on what they marked on the site). One "handed in" checkbox tracks the forms.
-- **My info.** Entered once, used on every form. Shows how complete it is and which forms use each section.
+- **My info.** Entered once, used on every form, with a note on which forms use each section. If anything a form uses is
+  blank, the site says so before and after the files are made.
 - **Sync** (optional). Sign in with an email and one password to keep info and progress in step across devices and tabs.
 - **Help.** Who to ask (the school's LSEC and the diocese's contact), FAQs (including limited volunteers), and "Report a
   problem".
