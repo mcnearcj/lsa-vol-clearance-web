@@ -72,18 +72,14 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
   }
 
   const st = (id: string) => standing(orderedRequirements.find((r) => r.id === id)!, progress[id]).standing
-  // The signable forms are made together in "Forms to sign" and count as one item; the rest are tracked one by one.
-  const tracked = orderedRequirements.filter((r) => st(r.id) !== 'na')
+  // The signable forms are made together in "Forms to sign" and count as one item.
   const formsDone = progress.forms?.status === 'done'
-  const total = tracked.length + 1
-  const doneCount = tracked.filter((r) => ['current', 'expiring'].includes(st(r.id))).length + (formsDone ? 1 : 0)
 
   const goToForms = () => {
     setTabState('checklist')
     requestAnimationFrame(() => document.getElementById('forms')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
-  const hasName = Boolean(profile.firstName.trim() && profile.lastName.trim())
   const who = personName(profile)
   const hasData = Boolean(who) || Object.keys(progress).length > 0
 
@@ -168,22 +164,6 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
 
         {tab === 'checklist' && (
           <>
-            <section className="overview" aria-label="Your progress">
-              <div className="overview-top">
-                <div>
-                  <p className="big">
-                    {doneCount}
-                    <span> of {total} done</span>
-                  </p>
-                </div>
-                {!hasName && (
-                  <button className="secondary" onClick={() => setTab('info')}>
-                    Add my info
-                  </button>
-                )}
-              </div>
-            </section>
-
             <section className="intro" aria-label="About this site">
               <p>
                 This site helps you finish {site.schoolName}’s volunteer clearances for the Diocese of Allentown. It lists each background check and training with steps and links, fills in your forms from your info, and makes a checklist of what to hand in to {site.lsec.name}.{' '}

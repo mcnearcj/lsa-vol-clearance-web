@@ -4,7 +4,6 @@ import { makeChecklist } from '../checklistDownload'
 import { customFields, missingFields, sourcesOf } from '../data/formFields'
 import { FORMS, FORM_ORDER } from '../data/forms'
 import { assetUrl } from '../content/assets'
-import { useContentVersion } from '../content/useContent'
 import { Rich } from './Rich'
 import { site } from '../data/site'
 import { formatDate, todayISO, todayUS } from '../dates'
@@ -71,21 +70,13 @@ function cropToInk(src: HTMLCanvasElement): HTMLCanvasElement | null {
 }
 
 export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: Props) {
-  const [chosen, setChosen] = useState<FormId[]>(fillable)
-  // In the editor's preview the forms can change while the page is open: keep the choices valid and tick new forms.
-  const version = useContentVersion()
-  const knownForms = useRef(new Set(fillable()))
-  useEffect(() => {
-    const all = fillable()
-    const added = all.filter((id) => !knownForms.current.has(id))
-    knownForms.current = new Set(all)
-    setChosen((c) => {
-      const next = all.filter((id) => c.includes(id) || added.includes(id))
-      return next.length === c.length && next.every((id, i) => id === c[i]) ? c : next
-    })
-  }, [version])
+  // Nothing is picked to start with: people choose the forms they need, or Select all.
+  const [picked, setChosen] = useState<FormId[]>([])
+  const everything = fillable()
+  // The editor's preview can remove a form while the page is open: ignore choices for forms that are gone.
+  const chosen = picked.filter((id) => everything.includes(id))
   const [sensitive, setSensitive] = useState<Record<string, string>>({})
-  const [withChecklist, setWithChecklist] = useState(true)
+  const [withChecklist, setWithChecklist] = useState(false)
   const [how, setHow] = useState<'paper' | 'screen'>('paper')
   const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw')
   const [typed, setTyped] = useState('')
@@ -185,6 +176,12 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     releaseFiles()
     setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : fillable().filter((f) => f === id || c.includes(f))))
   }
+  const allSelected = everything.length > 0 && everything.every((id) => chosen.includes(id)) && withChecklist
+  const selectAll = () => {
+    releaseFiles()
+    setChosen(allSelected ? [] : everything)
+    setWithChecklist(!allSelected)
+  }
   const chooseHow = (h: 'paper' | 'screen') => {
     releaseFiles()
     setHow(h)
@@ -270,6 +267,11 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     <div className="forms-panel" id="forms">
       <fieldset className="pick">
         <legend>Choose what you need</legend>
+        <div className="row">
+          <button type="button" className="ghost small-btn" onClick={selectAll}>
+            {allSelected ? 'Clear all' : 'Select all'}
+          </button>
+        </div>
         <ul>
           {FORMS.filter((f) => f.kind !== 'download').map(({ id, label, policy, note, sourceUrl }) => {
             return (
