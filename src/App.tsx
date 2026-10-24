@@ -3,6 +3,7 @@ import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { FormsPanel } from './components/FormsPanel'
 import { MigrationInfo } from './components/MigrationInfo'
+import { DEV_SITE } from './devSite'
 import { PrintableChecklist } from './components/PrintableChecklist'
 import { Rich } from './components/Rich'
 import { PageHead, SiteFooter, SiteHeader } from './components/SiteChrome'
@@ -19,15 +20,11 @@ import { emptyProfile, personName, type Progress, type Profile } from './types'
 
 type Tab = 'checklist' | 'info' | 'help' | 'migration'
 
-// The demo site has an extra tab for the school's webmaster. It's switched on by a build setting, so the version that goes
-// on the school's website (built without it) never contains the tab.
-const MIGRATION = import.meta.env.VITE_MIGRATION_INFO === '1'
-
 const tabs: [Tab, string][] = [
   ['checklist', 'Checklist'],
   ['info', 'My info'],
   ['help', 'Help'],
-  ...(MIGRATION ? ([['migration', 'Migration info']] as [Tab, string][]) : []),
+  ...(DEV_SITE ? ([['migration', 'Migration info']] as [Tab, string][]) : []),
 ]
 
 const asset = assetUrl
@@ -36,7 +33,7 @@ export default function App() {
   const [mode, setMode] = useState<StorageMode | null>(() => {
     const saved = getStorageMode()
     // A link ending in #migration (sent to the webmaster) goes straight to the page, without the keep-or-erase question.
-    if (!saved && MIGRATION && window.location.hash === '#migration') {
+    if (!saved && DEV_SITE && window.location.hash === '#migration') {
       setStorageMode('erase')
       return 'erase'
     }
@@ -67,7 +64,7 @@ export default function App() {
 
 function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: StorageMode) => void }) {
   useContentVersion() // draws again when the editor's preview gets new content
-  const [tab, setTabState] = useState<Tab>(MIGRATION && window.location.hash === '#migration' ? 'migration' : 'checklist')
+  const [tab, setTabState] = useState<Tab>(DEV_SITE && window.location.hash === '#migration' ? 'migration' : 'checklist')
   const [profile, setProfile] = useStored<Profile>('profile', emptyProfile)
   const [progress, setProgress] = useStored<Progress>('progress', {})
   const [message, setMessage] = useState('')
@@ -237,7 +234,7 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
 
         {tab === 'info' && <ProfileForm profile={profile} onChange={setProfile} onDone={() => setTab('checklist')} />}
 
-        {MIGRATION && tab === 'migration' && <MigrationInfo />}
+        {DEV_SITE && tab === 'migration' && <MigrationInfo />}
 
         {tab === 'help' && (
           <div className="help">

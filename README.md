@@ -31,7 +31,7 @@ school's own website, not stored here. Light and dark follow the visitor's devic
 
 ## The demo site's Migration info tab
 
-`VITE_MIGRATION_INFO=1 npm run build` adds a "Migration info" tab (`src/components/MigrationInfo.tsx`) for the school's
+`VITE_DEV_SITE=1 npm run build` adds a "Development Site - Work in Progress" banner and a "Migration info" tab (`src/components/MigrationInfo.tsx`) for the school's
 webmaster; `…/#migration` opens it directly. `/home/corey/dev/deploy-lsa-dev.sh` builds the demo with it. A normal
 `npm run build` (and `site.zip`) has no trace of it.
 

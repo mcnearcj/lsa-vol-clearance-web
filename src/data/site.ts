@@ -9,6 +9,9 @@ export const site = {
   homeUrl: 'https://www.lsabear.com/',
   /** The school's crest, shown in the header and footer ('' for none). It's loaded from the school's own site. */
   logoUrl: 'https://resources.finalsite.net/images/f_auto,q_auto/v1690818344/adeducatorsorg/pgio0q6cj53cv5tq9diw/LaSalleAcademylogo2016.eps',
+  /** The notice at the foot of every page (small markup: **bold**, [links](https://…), {school}). */
+  footerNote:
+    'This is a functional sample website and is not currently endorsed by {school} or the Diocese of Allentown. It’s a free, open-source project: [see the code on GitHub](https://github.com/mcnearcj/lsa-vol-clearance-web/tree/lsabear-custom).',
   /** Street address and phone for the footer ('' to leave out). */
   address: '440 Holland St., Shillington, PA 19607',
   phone: '610-777-7392',

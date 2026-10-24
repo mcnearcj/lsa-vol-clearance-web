@@ -17,6 +17,7 @@ export function SchoolSection() {
         <TextInput label="Tagline" value={content.school.tagline ?? ''} onChange={(v) => update((d) => (d.school.tagline = v))} />
         <TextInput label="School website" value={content.school.homeUrl ?? ''} onChange={(v) => update((d) => (d.school.homeUrl = v))} placeholder="https://" hint="The logo and the Home link go here." />
         <TextInput label="Logo (image web address)" value={content.school.logoUrl ?? ''} onChange={(v) => update((d) => (d.school.logoUrl = v))} placeholder="https://" hint="Loaded from that address each time the site is opened. Use an address on your school’s own website." />
+        <TextArea label="Footer note" rows={3} value={content.school.footerNote ?? ''} onChange={(v) => update((d) => (d.school.footerNote = v))} hint="The notice at the bottom of every page. It starts out saying this is a sample site; change it before you launch. Accepts **bold**, [links](https://address) and {school}." />
         <TextInput label="Street address (footer)" value={content.school.address ?? ''} onChange={(v) => update((d) => (d.school.address = v))} />
         <TextInput label="Phone (footer)" value={content.school.phone ?? ''} onChange={(v) => update((d) => (d.school.phone = v))} />
       </div>

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
+import { DEV_SITE } from '../devSite'
 import { site } from '../data/site'
 import { formatDate } from '../dates'
+import { Rich } from './Rich'
 
 // The page header, title and footer, laid out like the school's own website so the two feel like one place.
 // The crest, address and links all come from the school's settings, and each is left out when blank.
@@ -24,6 +26,12 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
     </>
   )
   return (
+    <>
+    {DEV_SITE && (
+      <div className="devbanner" role="note">
+        Development Site - Work in Progress
+      </div>
+    )}
     <header className="sitehead">
       <div className="sitehead-top inner">
         {site.homeUrl ? (
@@ -43,6 +51,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
       </div>
       {children}
     </header>
+    </>
   )
 }
 
@@ -88,8 +97,10 @@ export function SiteFooter() {
           {link(site.requirementsUrl, 'Diocese Safe Environment requirements')}
           {link(site.policiesUrl, 'Diocese Safe Environment policies')}
         </ul>
-        <p className="foot-note">
-          Not an official Diocese of Allentown website. Policies and forms from the diocese’s{' '}
+        <div className="foot-note">
+          {site.footerNote && <Rich text={site.footerNote} />}
+          <p>
+          Policies and forms come from the diocese’s{' '}
           <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
             Safe Environment Policies page
           </a>
@@ -98,7 +109,8 @@ export function SiteFooter() {
             {site.checklistName}
           </a>
           , revised {site.checklistRevised}.{site.checkedOn ? ` Compared with those pages on ${formatDate(site.checkedOn)}.` : ''} Check them for anything newer.
-        </p>
+          </p>
+        </div>
       </div>
     </footer>
   )

@@ -86,6 +86,13 @@ describe('school branding', () => {
     applyContent(c)
     expect([site.logoUrl, site.tagline, site.address, site.phone]).toEqual(['', '', '', ''])
   })
+  it('lets a school replace the footer note, with the school name filled in', () => {
+    const c = clone()
+    c.school = { ...c.school, footerNote: 'Run by {school} with the parish.' }
+    applyContent(c)
+    expect(site.footerNote).toBe('Run by {school} with the parish.')
+    expect(fill(site.footerNote)).toBe(`Run by ${site.schoolName} with the parish.`)
+  })
 })
 
 describe('applyContent', () => {

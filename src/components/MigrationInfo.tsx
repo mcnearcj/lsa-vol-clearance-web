@@ -1,6 +1,6 @@
 import { site } from '../data/site'
 
-// A page for the school's webmaster, shown only on the demo site (it's switched on by the VITE_MIGRATION_INFO build setting,
+// A page for the school's webmaster, shown only on the demo site (it's switched on by the VITE_DEV_SITE build setting,
 // so the version that goes on the school's website doesn't have it).
 
 const REPO = 'https://github.com/mcnearcj/lsa-vol-clearance-web/blob/lsabear-custom'
@@ -103,6 +103,7 @@ export function MigrationInfo() {
             </a>{' '}
             pages. The site shows which revision it follows ({site.checklistName}, revised {site.checklistRevised}).
           </li>
+          <li>Change the notice at the bottom of every page. It currently says this is a sample site that La Salle doesn’t endorse. You can edit it in the editor under School and contacts.</li>
           <li>Try it on a phone and on the browsers your families use. Fill in each form, print it, and check it by eye.</li>
           <li>Decide who is responsible for updates, and how often to check the diocese’s pages (the diocese does change its forms).</li>
         </ul>

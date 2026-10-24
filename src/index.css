@@ -121,6 +121,7 @@ main {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .app { min-height: 100vh; display: flex; flex-direction: column; }
+.devbanner { background: var(--warn-soft); color: var(--warn); border-bottom: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); text-align: center; padding: 6px 16px; font: 700 0.82rem var(--font-nav); text-transform: uppercase; letter-spacing: 0.06em; }
 .sitehead { background: var(--surface); }
 .sitehead-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: calc(16px + env(safe-area-inset-top, 0px)) 16px; }
 .brand { display: flex; align-items: center; gap: 14px; min-width: 0; color: inherit; text-decoration: none; }
@@ -181,6 +182,7 @@ main > div { display: flex; flex-direction: column; gap: 16px; }
 .foot-links a { display: block; padding: 9px 0; font: 500 0.98rem var(--font-nav); text-decoration: none; }
 .foot-links a:hover { text-decoration: underline; }
 .foot-note { grid-column: 1 / -1; font: italic 500 0.88rem / 1.55 var(--font-nav); color: var(--band-muted); max-width: 80ch; }
+.foot-note { display: flex; flex-direction: column; gap: 8px; }
 .foot-note a { color: var(--band-text); }
 @media (max-width: 700px) { .sitefoot-main { grid-template-columns: 1fr; } }
 
