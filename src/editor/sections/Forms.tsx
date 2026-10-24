@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormInfo, FormKind } from '../../data/forms'
-import { useEd } from '../context'
+import { useEd, useFileBytes, useLoadFile } from '../context'
 import { Placer } from '../Placer'
 import { PdfPages } from '../PdfPreview'
 import { listPdfFields, type PdfFieldInfo } from '../pdfInfo'
@@ -65,14 +65,26 @@ export function FormsSection() {
         </ul>
         {form && <FormEditor key={form.id} form={form} index={i} onRemoved={() => setSel(0)} />}
       </div>
+      {form?.kind === 'placed' && <PlacerHolder key={form.id} form={form} />}
     </section>
   )
 }
 
+/** The box-placing tool gets the full width of the page, below the form's other settings. */
+function PlacerHolder({ form }: { form: FormInfo }) {
+  const { bytes, loading } = useFileBytes(form.file)
+  return (
+    <div className="ed-card full">
+      <h3>Place the boxes</h3>
+      {bytes ? <Placer form={form} bytes={bytes} /> : loading ? <p>Getting the PDF from your website…</p> : form.file ? <p className="ed-hint">The editor couldn’t get this PDF from your website. Attach it above to place or change its boxes. The boxes you placed are kept.</p> : <p className="ed-hint">Attach the PDF above to start placing boxes.</p>}
+    </div>
+  )
+}
+
 function FormEditor({ form, index, onRemoved }: { form: FormInfo; index: number; onRemoved: () => void }) {
-  const { update, files, attach } = useEd()
+  const { update, attach } = useEd()
   const pick = useRef<HTMLInputElement>(null)
-  const bytes = form.file ? files.get(form.file) : undefined
+  const { bytes } = useFileBytes(form.file)
   const edit = (patch: Partial<FormInfo>) => update((d) => Object.assign(d.forms[index], patch))
 
   const onPick = async (file: File) => {
@@ -122,8 +134,7 @@ function FormEditor({ form, index, onRemoved }: { form: FormInfo; index: number;
       )}
 
       {form.kind === 'fillable' && <FillableMapping form={form} index={index} bytes={bytes} />}
-      {form.kind === 'placed' && (bytes ? <Placer form={form} bytes={bytes} /> : form.file ? <p className="ed-hint">Attach the PDF again to change where its boxes go. The boxes you placed are kept.</p> : null)}
-      {form.kind === 'built-in' && bytes && <PreviewButton formId={form.id} />}
+      {form.kind === 'built-in' && <PreviewButton formId={form.id} />}
 
       <div className="ed-row">
         <Btn kind="ghost" onClick={() => update((d) => { const a = d.forms; if (index > 0) [a[index - 1], a[index]] = [a[index], a[index - 1]] })}>Move up</Btn>
@@ -147,13 +158,14 @@ function FormEditor({ form, index, onRemoved }: { form: FormInfo; index: number;
 }
 
 function PreviewButton({ formId }: { formId: string }) {
-  const { content, files } = useEd()
+  const { content } = useEd()
+  const loadFile = useLoadFile()
   const [bytes, setBytes] = useState<Uint8Array | null>(null)
   const [error, setError] = useState('')
   return (
     <div>
       <div className="ed-row">
-        <Btn onClick={() => previewForm(content, formId, files, true).then(setBytes).catch((e: unknown) => setError(e instanceof Error ? e.message : 'The preview could not be made.'))}>Preview with sample information</Btn>
+        <Btn onClick={() => previewForm(content, formId, loadFile, true).then(setBytes).catch((e: unknown) => setError(e instanceof Error ? e.message : 'The preview could not be made.'))}>Preview with sample information</Btn>
         {bytes && <Btn kind="ghost" onClick={() => setBytes(null)}>Hide preview</Btn>}
       </div>
       {error && <p className="ed-error" role="alert">{error}</p>}
@@ -164,11 +176,11 @@ function PreviewButton({ formId }: { formId: string }) {
 
 function FillableMapping({ form, index, bytes }: { form: FormInfo; index: number; bytes: Uint8Array | undefined }) {
   const { content, update } = useEd()
+  const loadFile = useLoadFile()
   const [fields, setFields] = useState<PdfFieldInfo[] | null>(null)
   const [error, setError] = useState('')
   const [signed, setSigned] = useState(true)
   const [preview, setPreview] = useState<Uint8Array | null>(null)
-  const { files } = useEd()
 
   useEffect(() => {
     if (!bytes) return
@@ -228,7 +240,7 @@ function FillableMapping({ form, index, bytes }: { form: FormInfo; index: number
       </table>
       <div className="ed-row">
         <Check label="Preview as if signed on screen" checked={signed} onChange={setSigned} />
-        <Btn kind="primary" onClick={() => previewForm(content, form.id, files, signed).then(setPreview).catch((e: unknown) => setError(e instanceof Error ? e.message : 'The preview could not be made.'))}>Preview with sample information</Btn>
+        <Btn kind="primary" onClick={() => previewForm(content, form.id, loadFile, signed).then(setPreview).catch((e: unknown) => setError(e instanceof Error ? e.message : 'The preview could not be made.'))}>Preview with sample information</Btn>
         {preview && <Btn kind="ghost" onClick={() => setPreview(null)}>Hide preview</Btn>}
       </div>
       {preview && <PdfPages bytes={preview} />}

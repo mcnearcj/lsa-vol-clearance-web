@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormInfo } from '../data/forms'
 import type { Placement } from '../content/schema'
-import { useEd } from './context'
+import { labelOfField } from '../data/formFields'
+import { useEd, useLoadFile } from './context'
 import { PageCanvas, PdfPages } from './PdfPreview'
 import { openPdf, type PdfDoc } from './pdfjs'
 import { previewForm } from './sample'
 import { decodeSource, encodeSource, sourceOptions } from './sources'
 import { Btn, Check, Field, Select, TextInput } from './ui'
-
 
 const KNOWN_VALUES: Record<string, string[]> = {
   locationType: ['Parish', 'School', 'Both'],
@@ -16,24 +16,43 @@ const KNOWN_VALUES: Record<string, string[]> = {
   residedInPA: ['yes', 'no'],
 }
 
-type Drag = { x0: number; y0: number; x1: number; y1: number }
+type Rect = { x: number; y: number; w: number; h: number }
+const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const
+type Handle = (typeof HANDLES)[number]
 
-/** Shows a PDF page and lets the person draw a box where an answer belongs, then say what goes in it. */
+/** What the pointer is doing: drawing a new box, moving one, or dragging one of its handles. */
+type Gesture =
+  | { mode: 'new'; x0: number; y0: number; x1: number; y1: number }
+  | { mode: 'move' | 'resize'; idx: number; handle?: Handle; startX: number; startY: number; orig: Rect }
+
+const round = (n: number) => Math.round(n * 10) / 10
+const MIN = 4
+
+function describe(p: Placement): string {
+  const src = p.source
+  const what =
+    p.mark === 'x' ? 'X mark' : p.mark === 'dot' ? 'Filled dot' : src.kind === 'field' ? labelOfField(src.field) : src.kind === 'text' ? `“${src.text || '…'}”` : src.kind === 'ssn' ? 'SSN' : src.kind === 'name' ? 'Full name' : src.kind === 'date' ? 'Date' : 'Signature'
+  return p.when ? `${what} if ${labelOfField(p.when.field)} = ${p.when.equals}` : what
+}
+
+/** Shows a PDF page and lets the person draw, move and resize boxes where answers belong, and say what goes in each. */
 export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
-  const { content, update, files } = useEd()
+  const { content, update } = useEd()
+  const loadFile = useLoadFile()
   const [doc, setDoc] = useState<PdfDoc | null>(null)
   const [page, setPage] = useState(0)
   const [sel, setSel] = useState<number | null>(null)
-  const [drag, setDrag] = useState<Drag | null>(null)
+  const [gesture, setGesture] = useState<Gesture | null>(null)
+  // The box being moved or resized, shown live; it's written to the settings when the mouse is released.
+  const [live, setLive] = useState<{ idx: number; rect: Rect } | null>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
-  // Pixels per PDF point, chosen so the page fits the space available.
-  const [scale, setScale] = useState(1.2)
-  const holder = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1.2) // pixels per PDF point, chosen so the page fits the space available
   const [preview, setPreview] = useState<Uint8Array | null>(null)
   const [signed, setSigned] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const overlay = useRef<HTMLDivElement>(null)
+  const holder = useRef<HTMLDivElement>(null)
   const placements = form.placements ?? []
 
   useEffect(() => {
@@ -43,19 +62,20 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
       live = false
     }
   }, [bytes])
+
   useEffect(() => {
     if (!doc || !holder.current) return
     const el = holder.current
-    let live = true
+    let alive = true
     const fit = async () => {
       const pt = (await doc.getPage(page + 1)).getViewport({ scale: 1 }).width
-      if (live && el.clientWidth > 0) setScale(Math.max(0.7, Math.min(1.5, (el.clientWidth - 4) / pt)))
+      if (alive && el.clientWidth > 0) setScale(Math.max(0.7, Math.min(1.8, (el.clientWidth - 4) / pt)))
     }
     void fit()
     const ro = new ResizeObserver(() => void fit())
     ro.observe(el)
     return () => {
-      live = false
+      alive = false
       ro.disconnect()
     }
   }, [doc, page])
@@ -63,8 +83,7 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
 
   const edit = (i: number, patch: Partial<Placement>) =>
     update((d) => {
-      const f = d.forms.find((x) => x.id === form.id)!
-      Object.assign(f.placements![i], patch)
+      Object.assign(d.forms.find((x) => x.id === form.id)!.placements![i], patch)
     })
   const remove = (i: number) => {
     update((d) => {
@@ -78,41 +97,97 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
     const r = overlay.current!.getBoundingClientRect()
     return { x: Math.max(0, Math.min(size.w, e.clientX - r.left)), y: Math.max(0, Math.min(size.h, e.clientY - r.top)) }
   }
+  const pageW = size.w / scale
+  const pageH = size.h / scale
+  const clampRect = (r: Rect): Rect => {
+    const w = Math.max(MIN, Math.min(pageW, r.w))
+    const h = Math.max(MIN, Math.min(pageH, r.h))
+    return { x: Math.max(0, Math.min(pageW - w, r.x)), y: Math.max(0, Math.min(pageH - h, r.y)), w, h }
+  }
+
   const down = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).dataset.idx) return
+    const t = e.target as HTMLElement
+    const p = local(e)
     e.currentTarget.setPointerCapture(e.pointerId)
-    const p = local(e)
-    setDrag({ x0: p.x, y0: p.y, x1: p.x, y1: p.y })
-    setSel(null)
+    if (t.dataset.handle) {
+      const idx = Number(t.dataset.idx)
+      setSel(idx)
+      setGesture({ mode: 'resize', idx, handle: t.dataset.handle as Handle, startX: p.x, startY: p.y, orig: { ...rectOf(placements[idx]) } })
+    } else if (t.dataset.idx) {
+      const idx = Number(t.dataset.idx)
+      setSel(idx)
+      setGesture({ mode: 'move', idx, startX: p.x, startY: p.y, orig: { ...rectOf(placements[idx]) } })
+    } else {
+      setSel(null)
+      setGesture({ mode: 'new', x0: p.x, y0: p.y, x1: p.x, y1: p.y })
+    }
   }
+
+  const rectAt = (g: Gesture & { mode: 'move' | 'resize' }, p: { x: number; y: number }): Rect => {
+    const dx = (p.x - g.startX) / scale
+    const dy = (p.y - g.startY) / scale
+    const o = g.orig
+    if (g.mode === 'move') return clampRect({ ...o, x: o.x + dx, y: o.y + dy })
+    let { x, y, w, h } = o
+    const hd = g.handle!
+    if (hd.includes('e')) w = o.w + dx
+    if (hd.includes('s')) h = o.h + dy
+    if (hd.includes('w')) {
+      w = o.w - dx
+      x = o.x + dx
+    }
+    if (hd.includes('n')) {
+      h = o.h - dy
+      y = o.y + dy
+    }
+    // Dragging a handle past the opposite edge stops at the minimum size instead of flipping.
+    if (w < MIN) {
+      if (hd.includes('w')) x = o.x + o.w - MIN
+      w = MIN
+    }
+    if (h < MIN) {
+      if (hd.includes('n')) y = o.y + o.h - MIN
+      h = MIN
+    }
+    return clampRect({ x, y, w, h })
+  }
+
   const move = (e: React.PointerEvent) => {
-    if (!drag) return
+    if (!gesture) return
     const p = local(e)
-    setDrag({ ...drag, x1: p.x, y1: p.y })
+    if (gesture.mode === 'new') setGesture({ ...gesture, x1: p.x, y1: p.y })
+    else setLive({ idx: gesture.idx, rect: rectAt(gesture, p) })
   }
+
   const up = (e: React.PointerEvent) => {
-    if (!drag) return
-    // Take the end point from the release itself, so a quick drag with few move events still counts.
-    const end = local(e)
-    const x = Math.min(drag.x0, end.x)
-    const y = Math.min(drag.y0, end.y)
-    const w = Math.abs(end.x - drag.x0)
-    const h = Math.abs(end.y - drag.y0)
-    setDrag(null)
-    if (w < 8 || h < 5) return
-    const added: Placement = { page, x: round(x / scale), y: round(y / scale), w: round(w / scale), h: round(h / scale), source: { kind: 'field', field: 'firstName' } }
-    update((d) => {
-      const f = d.forms.find((v) => v.id === form.id)!
-      f.placements = [...(f.placements ?? []), added]
-    })
-    setSel(placements.length)
+    if (!gesture) return
+    const p = local(e) // the end point comes from the release itself, so a quick drag with few move events still counts
+    const g = gesture
+    setGesture(null)
+    setLive(null)
+    if (g.mode === 'new') {
+      const x = Math.min(g.x0, p.x)
+      const y = Math.min(g.y0, p.y)
+      const w = Math.abs(p.x - g.x0)
+      const h = Math.abs(p.y - g.y0)
+      if (w < 8 || h < 5) return
+      const added: Placement = { page, x: round(x / scale), y: round(y / scale), w: round(w / scale), h: round(h / scale), source: { kind: 'field', field: 'firstName' } }
+      update((d) => {
+        const f = d.forms.find((v) => v.id === form.id)!
+        f.placements = [...(f.placements ?? []), added]
+      })
+      setSel(placements.length)
+      return
+    }
+    const r = rectAt(g, p)
+    if (round(r.x) !== round(g.orig.x) || round(r.y) !== round(g.orig.y) || round(r.w) !== round(g.orig.w) || round(r.h) !== round(g.orig.h)) edit(g.idx, { x: round(r.x), y: round(r.y), w: round(r.w), h: round(r.h) })
   }
 
   const runPreview = async () => {
     setBusy(true)
     setError('')
     try {
-      setPreview(await previewForm(content, form.id, files, signed))
+      setPreview(await previewForm(content, form.id, loadFile, signed))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The preview could not be made.')
     } finally {
@@ -121,7 +196,12 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
   }
 
   const cur = sel !== null ? placements[sel] : undefined
-  const valueChoices = (field: string): string[] | null => KNOWN_VALUES[field] ?? content.fields.find((f) => f.id === field && (f.type === 'choice' || f.type === 'yesno'))?.options ?? (content.fields.find((f) => f.id === field)?.type === 'yesno' ? ['Yes', 'No'] : null)
+  const valueChoices = (field: string): string[] | null => {
+    if (KNOWN_VALUES[field]) return KNOWN_VALUES[field]
+    const f = content.fields.find((x) => x.id === field)
+    if (f?.type === 'yesno') return ['Yes', 'No']
+    return f?.type === 'choice' ? (f.options ?? null) : null
+  }
   const kindOf = (p: Placement) => (p.mark === 'x' ? 'x' : p.mark === 'dot' ? 'dot' : p.source.kind === 'signature' ? 'signature' : 'text')
 
   if (preview)
@@ -138,42 +218,40 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
   return (
     <div className="ed-placer">
       <p className="ed-hint">
-        <strong>Draw a box</strong> over each line or spot where something should go (click and drag on the page). Then choose what goes in it. For a check box or a circle to
-        fill in, draw a small box over it and pick “X mark” or “Filled dot”.
+        <strong>Drag on the page to draw a box</strong> over each line or spot where something should go. <strong>Drag a box to move it</strong>, or <strong>drag its edges and corners to resize it</strong>. The label shows what goes in it.
+        For a check box or a circle to fill in, draw a small box over it and choose “X mark” or “Filled dot”.
       </p>
-      <div className="ed-row">
-        {doc && doc.numPages > 1 && (
-          <Select value={String(page)} onChange={(v) => { setPage(Number(v)); setSel(null) }} options={Array.from({ length: doc.numPages }, (_, i) => [String(i), `Page ${i + 1}`])} />
-        )}
-        <Check label="Preview as if signed on screen" checked={signed} onChange={setSigned} />
-        <Btn kind="primary" onClick={() => void runPreview()} disabled={busy || placements.length === 0}>{busy ? 'Making preview…' : 'Preview with sample information'}</Btn>
-      </div>
-      {error && <p className="ed-error" role="alert">{error}</p>}
       <div className="ed-placer-body">
         <div className="ed-canvas-col" ref={holder}>
-         <div className="ed-canvas-wrap" style={{ width: size.w || undefined }}>
-          {doc ? <PageCanvas doc={doc} page={page} scale={scale} onSize={onSize} /> : <p>Loading the page…</p>}
-          <div ref={overlay} className="ed-overlay" style={{ width: size.w, height: size.h }} onPointerDown={down} onPointerMove={move} onPointerUp={up}>
-            {placements.map((p, i) =>
-              p.page === page ? (
-                <div
-                  key={i}
-                  data-idx={i}
-                  className={`ed-box ${i === sel ? 'on' : ''} ${p.mark ?? ''}`}
-                  style={{ left: p.x * scale, top: p.y * scale, width: p.w * scale, height: p.h * scale }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation()
-                    setSel(i)
-                  }}
-                  title={describe(p, content.fields)}
-                >
-                  {p.mark === 'x' ? '✕' : p.mark === 'dot' ? '●' : ''}
-                </div>
-              ) : null,
-            )}
-            {drag && <div className="ed-box draft" style={{ left: Math.min(drag.x0, drag.x1), top: Math.min(drag.y0, drag.y1), width: Math.abs(drag.x1 - drag.x0), height: Math.abs(drag.y1 - drag.y0) }} />}
+          <div className="ed-row">
+            {doc && doc.numPages > 1 && <Select value={String(page)} onChange={(v) => { setPage(Number(v)); setSel(null) }} options={Array.from({ length: doc.numPages }, (_, i) => [String(i), `Page ${i + 1} of ${doc.numPages}`])} />}
+            <Check label="Preview as if signed on screen" checked={signed} onChange={setSigned} />
+            <Btn kind="primary" onClick={() => void runPreview()} disabled={busy || placements.length === 0}>{busy ? 'Making preview…' : 'Preview with sample information'}</Btn>
           </div>
-         </div>
+          {error && <p className="ed-error" role="alert">{error}</p>}
+          <div className="ed-canvas-wrap" style={{ width: size.w || undefined }}>
+            {doc ? <PageCanvas doc={doc} page={page} scale={scale} onSize={onSize} /> : <p>Loading the page…</p>}
+            <div ref={overlay} className="ed-overlay" style={{ width: size.w, height: size.h }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { setGesture(null); setLive(null) }}>
+              {placements.map((p, i) => {
+                if (p.page !== page) return null
+                const r = live?.idx === i ? live.rect : rectOf(p)
+                const on = i === sel
+                return (
+                  <div
+                    key={i}
+                    data-idx={i}
+                    className={`ed-box ${on ? 'on' : ''} ${p.mark ?? ''}`}
+                    style={{ left: r.x * scale, top: r.y * scale, width: r.w * scale, height: r.h * scale }}
+                  >
+                    <span className="ed-tag">{describe(p)}</span>
+                    {p.mark === 'x' ? '✕' : p.mark === 'dot' ? '●' : ''}
+                    {on && HANDLES.map((h) => <span key={h} data-idx={i} data-handle={h} className={`ed-handle ${h}`} />)}
+                  </div>
+                )
+              })}
+              {gesture?.mode === 'new' && <div className="ed-box draft" style={{ left: Math.min(gesture.x0, gesture.x1), top: Math.min(gesture.y0, gesture.y1), width: Math.abs(gesture.x1 - gesture.x0), height: Math.abs(gesture.y1 - gesture.y0) }} />}
+            </div>
+          </div>
         </div>
         <aside className="ed-side">
           {cur && sel !== null ? (
@@ -183,7 +261,7 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
                 label="What goes here"
                 value={kindOf(cur)}
                 onChange={(v) =>
-                  edit(sel, v === 'x' ? { mark: 'x', source: { kind: 'text', text: '' } } : v === 'dot' ? { mark: 'dot', source: { kind: 'text', text: '' } } : v === 'signature' ? { mark: undefined, source: { kind: 'signature' } } : { mark: undefined, source: cur.source.kind === 'signature' || cur.source.kind === 'text' && cur.mark ? { kind: 'field', field: 'firstName' } : cur.source })
+                  edit(sel, v === 'x' ? { mark: 'x', source: { kind: 'text', text: '' } } : v === 'dot' ? { mark: 'dot', source: { kind: 'text', text: '' } } : v === 'signature' ? { mark: undefined, source: { kind: 'signature' } } : { mark: undefined, source: cur.source.kind === 'signature' || (cur.source.kind === 'text' && cur.mark) ? { kind: 'field', field: 'firstName' } : cur.source })
                 }
                 options={[
                   ['text', 'Text'],
@@ -214,22 +292,25 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
                     ))}
                 </Field>
               )}
-              <div className="ed-grid four">
-                {(['x', 'y', 'w', 'h'] as const).map((k) => (
-                  <TextInput key={k} label={k.toUpperCase()} type="number" value={String(cur[k])} onChange={(v) => edit(sel, { [k]: Number(v) || 0 })} />
-                ))}
-              </div>
+              <details className="ed-fine">
+                <summary>Exact position and size</summary>
+                <div className="ed-grid four">
+                  {(['x', 'y', 'w', 'h'] as const).map((k) => (
+                    <TextInput key={k} label={k.toUpperCase()} type="number" value={String(cur[k])} onChange={(v) => edit(sel, { [k]: Number(v) || 0 })} />
+                  ))}
+                </div>
+              </details>
               <Btn kind="danger" onClick={() => remove(sel)}>Delete this box</Btn>
             </>
           ) : (
-            <p>Click a box to change it, or draw a new one.</p>
+            <p>Click a box to change what goes in it, or drag on the page to draw a new one.</p>
           )}
           <h4>All boxes ({placements.length})</h4>
           <ul className="ed-boxlist">
             {placements.map((p, i) => (
               <li key={i}>
                 <button type="button" className={i === sel ? 'on' : ''} onClick={() => { setPage(p.page); setSel(i) }}>
-                  p{p.page + 1}: {describe(p, content.fields)}
+                  p{p.page + 1}: {describe(p)}
                 </button>
               </li>
             ))}
@@ -240,11 +321,4 @@ export function Placer({ form, bytes }: { form: FormInfo; bytes: Uint8Array }) {
   )
 }
 
-const round = (n: number) => Math.round(n * 10) / 10
-
-function describe(p: Placement, fields: { id: string; label: string }[]): string {
-  const src = p.source
-  const what =
-    p.mark === 'x' ? 'X mark' : p.mark === 'dot' ? 'Filled dot' : src.kind === 'field' ? (fields.find((f) => f.id === src.field)?.label ?? src.field) : src.kind === 'text' ? `“${src.text}”` : src.kind
-  return p.when ? `${what} if ${fields.find((f) => f.id === p.when!.field)?.label ?? p.when.field} = ${p.when.equals}` : what
-}
+const rectOf = (p: Placement): Rect => ({ x: p.x, y: p.y, w: p.w, h: p.h })

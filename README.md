@@ -36,8 +36,9 @@ fields mapped to My info) and `placed` (boxes positioned on any PDF).
 ## The site editor
 
 `npm run build:editor` writes `dist-editor/editor.html`, one self-contained file (`src/editor/`) that opens by
-double-clicking. It reads and writes `content.json`, lets the user attach PDFs, map PDF fields, place boxes on a PDF
-with a live preview, and downloads `site-data.zip` (a `data/` folder to copy next to `index.html`). It is not part of the
+double-clicking. It loads the current settings from the live site's address (needs CORS on `data/` and `forms/`; `public/_headers`
+does this for Cloudflare Pages and Netlify) or from a `content.json` file, lets the user attach PDFs, map PDF fields,
+place, move and resize boxes on a PDF with a live preview, shows a detailed collapsible list of changes, and downloads `site-data.zip` (a `data/` folder to copy next to `index.html`). It is not part of the
 published site. `npm run build:all` builds both.
 
 Edit the built-in settings directly in `src/data/` for changes you want everywhere; blank forms live in `public/forms/`.

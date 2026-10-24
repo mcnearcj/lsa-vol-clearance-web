@@ -24,6 +24,11 @@ subscription feature. Volunteers' details are never sent to the host: they stay 
   already adds a changing number to its request for `content.json` to get around caches, so this is a convenience.
 - **Works at a domain's root or in a folder** (`https://clearances.example.org/` or `https://example.org/volunteers/`).
   It does either with no changes. It needs no URL rewrite rules.
+- **Lets other pages read the `data` and `forms` folders (CORS).** The site editor loads your current settings from
+  your website's address. That only works if the host allows it. GitHub Pages does by default. For Cloudflare Pages and
+  Netlify the site includes a `_headers` file that turns it on. On other hosts, ask support to send the header
+  `Access-Control-Allow-Origin: *` for files under `data/` and `forms/`. If it isn't possible, the editor still works:
+  open the `content.json` file instead of typing the address.
 - A custom address such as `clearances.yourschool.org`, which needs one DNS record from whoever manages the domain.
 
 ## What won't work

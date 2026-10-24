@@ -48,13 +48,8 @@ export async function sampleSignature(): Promise<Uint8Array> {
 }
 
 /** The form filled in with sample details, using the editor's current (unsaved) settings and attached PDFs. */
-export async function previewForm(content: Content, formId: string, files: Map<string, Uint8Array>, signed: boolean): Promise<Uint8Array> {
+export async function previewForm(content: Content, formId: string, load: (path: string) => Promise<Uint8Array>, signed: boolean): Promise<Uint8Array> {
   applyContent(content)
-  const load = async (path: string) => {
-    const bytes = files.get(path)
-    if (!bytes) throw new Error('Attach the PDF first so there is something to preview.')
-    return bytes
-  }
   const profile = sampleProfile(content)
   const sensitive: Record<string, string> = Object.fromEntries(content.fields.filter((f) => f.sensitive).map((f) => [f.id, 'Sample']))
   const { bytes } = await fillForm(formId, profile, load, {

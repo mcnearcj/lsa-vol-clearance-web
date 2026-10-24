@@ -54,9 +54,13 @@ site asks volunteers for ("My info").
 
 **Each time:**
 
-1. Open `editor.html`. Click **Open my settings** and choose the `content.json` from your site folder's `data` folder.
-   (The first time there isn't one yet: click **Start from the built-in settings**.)
-2. Make your changes. The **Save** tab lists what changed and warns about anything missing.
+1. Open `editor.html` on a computer (it isn't made for phones or tablets). Type your website's address and click
+   **Load from my website**. The editor reads the site's current settings and forms, so you start from what volunteers
+   see now. You can switch to **Open a settings file instead** and choose the `content.json` from your site folder's
+   `data` folder if loading from the address doesn't work. If the site has no settings of its own yet, it starts from
+   the built-in ones.
+2. Make your changes. The **Save** tab shows exactly what changed (click a heading to see the details) and warns
+   about anything missing.
 3. Click **Download site-data.zip** and unzip it. You get a folder named `data`.
 4. Put that `data` folder into your site folder, next to `index.html`, replacing the old one.
 5. Upload the whole site folder to the host (for Cloudflare Pages: your project → **Create deployment** → drag the folder in).
@@ -74,6 +78,9 @@ Pick the kind that fits the PDF:
 | is just a page to print and fill in by hand | **A PDF to print** | Give it a name. Either attach the PDF or paste the diocese's web address; volunteers open it from there. |
 | has fill-in boxes (click in it and text boxes light up) | **A PDF that has fill-in fields** | Attach it. The editor lists the boxes and you choose what goes in each one (name, address, date, signature…). |
 | has no boxes, or is a scan | **A PDF without fields** | Attach it. Click and drag a box over each line on the page, then choose what goes in it. For a check box or circle, draw a small box over it and choose "X mark" or "Filled dot". |
+
+In the box-placing view the page is on the left and the controls are on the right. Drag on the page to draw a box,
+drag a box to move it, and drag its edges or corners to resize it. Each box is labeled with what goes in it.
 
 Every form has a **Preview with sample information** button. Always use it before saving: it fills the form with made-up
 details so you can see whether everything lands on its line. Allow 15 to 30 minutes for a new form without boxes.

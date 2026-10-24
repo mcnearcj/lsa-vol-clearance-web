@@ -1,0 +1,7 @@
+# Lets the site editor (opened from a file on someone's computer) read the settings and forms from this site.
+# These are public files, so allowing other pages to read them reveals nothing new. Honored by Cloudflare Pages and Netlify.
+/data/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: no-cache
+/forms/*
+  Access-Control-Allow-Origin: *
