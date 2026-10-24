@@ -1,12 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { applyContent, defaultContent } from '../content/apply'
 import { submissionChecklist } from './submission'
 
+const clone = () => structuredClone(defaultContent)
+afterEach(() => applyContent(clone()))
+
 const titles = (s: ReturnType<typeof submissionChecklist>) => s.map((x) => x.title)
-const find = (s: ReturnType<typeof submissionChecklist>, text: string) => s.flatMap((x) => x.items).find((i) => i.label.includes(text))!
+const labels = (s: ReturnType<typeof submissionChecklist>) => s.flatMap((x) => x.items).map((i) => i.label)
 
 describe('submissionChecklist', () => {
-  it('lists signed forms, the NSOR application, and the certificates to hand in', () => {
-    const s = submissionChecklist({})
+  it('lists signed forms, the NSOR application, certificates and the driver form, with nothing about a person', () => {
+    const s = submissionChecklist()
     expect(titles(s)).toEqual(['Signed forms', 'Send to the state', 'Certificates and results', 'Only if you drive for the school'])
     expect(s[0].items).toHaveLength(5)
     expect(s[2].items.map((i) => i.label)).toEqual([
@@ -17,28 +21,19 @@ describe('submissionChecklist', () => {
       'Mandated Reporter Training certificate',
       expect.stringContaining('NSOR verification letter'),
     ])
+    for (const item of s.flatMap((x) => x.items)) expect(Object.keys(item).sort()).toEqual(['detail', 'label'])
   })
 
-  it('marks the forms in a signed download as signed', () => {
-    const s = submissionChecklist({}, { forms: ['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth', 'nsor'], signedOn: '10/20/2026' })
-    expect(s[0].items.every((i) => i.done && i.status === 'Signed on screen 10/20/2026')).toBe(true)
-    expect(find(s, 'PATCH').done).toBe(false)
-  })
-
-  it('says to sign by hand for an unsigned download, and uses the handed-in checkbox for forms not in it', () => {
-    const s = submissionChecklist({ forms: { status: 'done', completedOn: '2026-09-01' } }, { forms: ['conduct'] })
-    expect(find(s, 'Code of Conduct')).toMatchObject({ done: false, status: expect.stringContaining('print it, then sign') })
-    expect(find(s, 'Sexual Abuse')).toMatchObject({ done: true, status: expect.stringContaining('Handed in') })
-  })
-
-  it('shows each certificate’s status from the checklist', () => {
-    const s = submissionChecklist({ patch: { status: 'done', completedOn: '2026-10-01' }, fbi: { status: 'started' } })
-    expect(find(s, 'PATCH')).toMatchObject({ done: true, status: expect.stringContaining('Done') })
-    expect(find(s, 'FBI')).toMatchObject({ done: false, status: 'In progress' })
-    expect(find(s, 'Protecting God')).toMatchObject({ done: false, status: 'Not done yet' })
-  })
-
-  it('leaves out the driver form for people who don’t drive', () => {
-    expect(titles(submissionChecklist({ mvr: { status: 'na' } }))).not.toContain('Only if you drive for the school')
+  it('always reflects the site’s current content: coordinator, added and removed items and forms', () => {
+    const c = clone()
+    c.lsec = { name: 'Pat Example', email: 'pat@example.org' }
+    c.items = c.items.filter((r) => r.id !== 'mvr')
+    c.items.push({ id: 'cpr', number: 20, group: 'training', title: 'CPR', summary: '', handIn: 'CPR card', links: [], steps: [] })
+    c.forms.push({ id: 'slip', kind: 'download', label: 'Slip', handIn: 'Field trip slip', handTo: 'lsec', sourceUrl: 'https://example.org/slip.pdf' })
+    applyContent(c)
+    const s = submissionChecklist()
+    expect(s[0].intro).toContain('Pat Example')
+    expect(labels(s)).toEqual(expect.arrayContaining(['CPR card', 'Field trip slip']))
+    expect(titles(s)).not.toContain('Only if you drive for the school')
   })
 })

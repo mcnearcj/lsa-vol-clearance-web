@@ -5,7 +5,7 @@ La Salle Academy volunteers working through the Diocese of Allentown's Safe Envi
 helper, not a diocesan site.
 
 This `lsabear-custom` branch has no accounts, no cloud sync and no server: a volunteer reads the checklist and
-step-by-step instructions, enters their details once, and gets filled-in forms plus a printable submission checklist.
+step-by-step instructions, enters their details once, and gets filled-in forms plus a blank printable checklist (made from the site's current content, no personal info).
 Their info stays in their own browser, and the first screen asks whether to keep it on that computer or erase it
 when the tab closes (default: erase). The comprehensive version (cloud sync, renewal tracking) is on `main`.
 
@@ -28,6 +28,12 @@ npm run build     # static site in dist/
 buttons), both bundled, a header with the crest and a footer with the address (`src/components/SiteChrome.tsx`). The
 crest, tagline, school link, address and phone are optional settings (`school.logoUrl` etc.); the crest is loaded from the
 school's own website, not stored here. Light and dark follow the visitor's device.
+
+## The demo site's Migration info tab
+
+`VITE_MIGRATION_INFO=1 npm run build` adds a "Migration info" tab (`src/components/MigrationInfo.tsx`) for the school's
+webmaster; `…/#migration` opens it directly. `/home/corey/dev/deploy-lsa-dev.sh` builds the demo with it. A normal
+`npm run build` (and `site.zip`) has no trace of it.
 
 ## Content
 

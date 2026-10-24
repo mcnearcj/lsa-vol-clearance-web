@@ -23,7 +23,7 @@ export interface FormInfo {
   /** The policy to read before signing, when there is one. */
   policy?: string
   note?: string
-  /** What the volunteer hands in, for the submission checklist. */
+  /** What the volunteer hands in, for the printable checklist. */
   handIn: string
   handInDetail?: string
   /** Who gets the signed form: the school's coordinator or the state. */

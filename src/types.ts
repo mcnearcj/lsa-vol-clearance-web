@@ -83,11 +83,11 @@ export interface Requirement {
   steps: string[]
   /** A form for this item that's made under "Forms to sign". */
   form?: FormId
-  /** Extra line under this item on the submission checklist. */
+  /** Extra line under this item on the printable checklist. */
   handInDetail?: string
   /** Reference PDFs from the diocese (instructions, originals). */
   references?: { label: string; file: string }[]
-  /** What the volunteer hands in for this item, for the submission checklist. */
+  /** What the volunteer hands in for this item, for the printable checklist. */
   handIn: string
 }
 

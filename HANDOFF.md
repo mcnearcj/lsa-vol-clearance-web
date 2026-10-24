@@ -72,6 +72,14 @@ site asks volunteers for ("My info").
 **Keep one site folder** (the unzipped `site.zip` plus its `data` folder) on your computer. Uploading it replaces the
 whole site, so it must always contain the `data` folder, or your changes disappear.
 
+### The printable checklist
+
+The checklist page has a **Download the printable checklist (PDF)** button. It makes a one-page list of everything to hand
+in, with empty boxes and lines for a name and date, from whatever the site says at that moment. When you change an item or
+a form in the editor and upload it, the next checklist reflects it. It needs nothing from the volunteer. You can link
+straight to it from the school's website with the site's address followed by `#printable`, for example
+`https://clearances.example.org/#printable`: that opens the site at the button.
+
 ### How the site looks
 
 The page is styled to match the school's own website (navy and sky-blue colors, the same fonts, a header with the crest and

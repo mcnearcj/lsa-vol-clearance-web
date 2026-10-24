@@ -1,6 +1,5 @@
 import '@fontsource-variable/dancing-script'
 import { useEffect, useRef, useState } from 'react'
-import { makeChecklist } from '../checklistDownload'
 import { customFields, missingFields, sourcesOf } from '../data/formFields'
 import { FORMS, FORM_ORDER } from '../data/forms'
 import { assetUrl } from '../content/assets'
@@ -15,7 +14,7 @@ import { personName, ssnOnAuthorization, type FormId, type ItemProgress, type Pr
 const fillable = () => FORM_ORDER.filter((id) => FORMS.find((f) => f.id === id)?.kind !== 'download')
 
 // The six forms are filled in automatically, so they're handled together here instead of as checklist items:
-// pick the forms (and the submission checklist), optionally sign on screen and add an SSN, then open or download
+// pick the forms, optionally sign on screen and add an SSN, then open or download
 // the files. The signature and SSN live only in this component's memory; nothing downloads until the person clicks.
 
 interface Props {
@@ -76,7 +75,6 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   // The editor's preview can remove a form while the page is open: ignore choices for forms that are gone.
   const chosen = picked.filter((id) => everything.includes(id))
   const [sensitive, setSensitive] = useState<Record<string, string>>({})
-  const [withChecklist, setWithChecklist] = useState(false)
   const [how, setHow] = useState<'paper' | 'screen'>('paper')
   const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw')
   const [typed, setTyped] = useState('')
@@ -176,11 +174,10 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
     releaseFiles()
     setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : fillable().filter((f) => f === id || c.includes(f))))
   }
-  const allSelected = everything.length > 0 && everything.every((id) => chosen.includes(id)) && withChecklist
+  const allSelected = everything.length > 0 && everything.every((id) => chosen.includes(id))
   const selectAll = () => {
     releaseFiles()
     setChosen(allSelected ? [] : everything)
-    setWithChecklist(!allSelected)
   }
   const chooseHow = (h: 'paper' | 'screen') => {
     releaseFiles()
@@ -198,8 +195,8 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   const ssnOk = ssnDigits.length === 0 || ssnDigits.length === 9
   const hasSignature = sigMode === 'draw' ? inked : typedName.trim().length > 1
   const missing = missingFields(chosen, profile)
-  const nothingChosen = chosen.length === 0 && !withChecklist
-  const ready = !nothingChosen && ssnOk && (how === 'paper' || chosen.length === 0 || (agreed && hasSignature))
+  const nothingChosen = chosen.length === 0
+  const ready = !nothingChosen && ssnOk && (how === 'paper' || (agreed && hasSignature))
 
   const signatureImage = async (): Promise<Uint8Array> => {
     if (sigMode === 'draw') {
@@ -245,10 +242,6 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
         })
         setMadeWithSsn(Boolean(ssnUsed))
         setMadeMissing(missing)
-      }
-      if (withChecklist) {
-        const { bytes, filename } = await makeChecklist(profile, progress, { forms: chosen, signedOn })
-        made.push({ title: 'Your submission checklist', note: 'For you to keep. Don’t hand it in.', filename, url: asUrl(bytes) })
       }
       setFiles(made)
       setSsn('')
@@ -300,18 +293,6 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
               </li>
             )
           })}
-          <li className="checklist-pick">
-            <label className="check">
-              <input id="form-checklist" type="checkbox" checked={withChecklist} onChange={(e) => {
-                  releaseFiles()
-                  setWithChecklist(e.target.checked)
-                }} />
-              <span>
-                My submission checklist
-                <small>Lists the certificates and results to turn in with your forms. It’s just for you to keep.</small>
-              </span>
-            </label>
-          </li>
         </ul>
       </fieldset>
 

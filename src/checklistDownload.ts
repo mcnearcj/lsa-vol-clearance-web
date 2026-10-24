@@ -1,18 +1,16 @@
 import { site } from './data/site'
-import { submissionChecklist, type DownloadInfo } from './data/submission'
+import { submissionChecklist } from './data/submission'
 import { todayUS } from './dates'
-import { personName, type Profile, type Progress } from './types'
 
-/** The volunteer's own submission checklist: a separate file from the forms, so it isn't handed in. */
-export async function makeChecklist(profile: Profile, progress: Progress, download?: DownloadInfo): Promise<{ bytes: Uint8Array; filename: string }> {
+/** The blank printable checklist, made from the site's content as it is right now. */
+export async function makeChecklist(): Promise<{ bytes: Uint8Array; filename: string }> {
   const { makeChecklistPdf } = await import('./pdf/checklist')
   const bytes = await makeChecklistPdf({
-    name: [profile.firstName, profile.middleName, profile.lastName].map((s) => s.trim()).filter(Boolean).join(' '),
     schoolName: site.schoolName,
     lsec: site.lsec,
     date: todayUS(),
-    sections: submissionChecklist(progress, download),
+    basedOn: `${site.checklistName}, revised ${site.checklistRevised}`,
+    sections: submissionChecklist(),
   })
-  const who = personName(profile).replace(/[^A-Za-z0-9]+/g, '-')
-  return { bytes, filename: `submission-checklist${who ? `-${who}` : ''}.pdf` }
+  return { bytes, filename: 'volunteer-clearance-checklist.pdf' }
 }

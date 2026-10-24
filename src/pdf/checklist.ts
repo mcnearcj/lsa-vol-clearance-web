@@ -1,13 +1,12 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
 import type { SubmissionSection } from '../data/submission'
 
-// Draws the volunteer's submission checklist as a one-page PDF.
+// Draws the printable checklist as a one-page PDF: empty boxes, and lines to write a name and date on.
 
 const W = 612
 const H = 792
 const INK = rgb(0.1, 0.12, 0.18)
 const MUTED = rgb(0.38, 0.42, 0.5)
-const OK = rgb(0.11, 0.48, 0.3)
 const BAND = rgb(0.12, 0.23, 0.41)
 
 /** Standard PDF fonts only handle Latin-1. */
@@ -34,10 +33,11 @@ function wrap(font: PDFFont, text: string, size: number, maxWidth: number): stri
 }
 
 export interface ChecklistInfo {
-  name: string
   schoolName: string
   lsec: { name: string; email: string }
   date: string
+  /** The diocese document the list follows, shown in small print ('' to leave out). */
+  basedOn?: string
   sections: SubmissionSection[]
 }
 
@@ -51,7 +51,7 @@ export async function makeChecklistPdf(info: ChecklistInfo): Promise<Uint8Array>
 
 async function draw(info: ChecklistInfo, s: number): Promise<PDFDocument> {
   const doc = await PDFDocument.create()
-  doc.setTitle(`Submission checklist - ${info.name || 'volunteer'}`)
+  doc.setTitle('Volunteer clearance checklist')
   const regular = await doc.embedFont(StandardFonts.Helvetica)
   const bold = await doc.embedFont(StandardFonts.HelveticaBold)
   const serif = await doc.embedFont(StandardFonts.TimesRomanBold)
@@ -81,18 +81,24 @@ async function draw(info: ChecklistInfo, s: number): Promise<PDFDocument> {
 
   band()
   y = 70
-  text('Submission checklist', M, 22 * s, serif)
+  text('Volunteer clearance checklist', M, 22 * s, serif)
   y += 18 * s
-  text([info.name, info.schoolName, `Printed ${info.date}`].filter(Boolean).join('  -  '), M, 11 * s, regular, MUTED)
-  y += 18 * s
-  para(`Gather everything below, then give it to ${info.lsec.name}, ${info.schoolName}'s Local Safe Environment Coordinator (${info.lsec.email}).`, 10.5, regular)
-  y += 2 * s
-  para(
-    'The ticks and dates come from what you entered on the website, on your own device. They are not from a diocese or state record, so check them against your own certificates and letters.',
-    9.5,
-    regular,
-    MUTED,
-  )
+  text([info.schoolName, 'Diocese of Allentown', `Printed ${info.date}`].filter(Boolean).join('  -  '), M, 11 * s, regular, MUTED)
+  y += 26 * s
+  // Lines to write on: this page holds nothing about the person.
+  const line = (label: string, x: number, w: number) => {
+    text(label, x, 10.5 * s, bold)
+    const from = x + bold.widthOfTextAtSize(label, 10.5 * s) + 6
+    page.drawLine({ start: { x: from, y: H - y - 2 }, end: { x: x + w, y: H - y - 2 }, thickness: 0.6, color: MUTED })
+  }
+  line('Name', M, 300)
+  line('Date', M + 330, right - M - 330)
+  y += 22 * s
+  para(`Check off each item as you finish it, then give everything to ${info.lsec.name}, ${info.schoolName}'s Local Safe Environment Coordinator (${info.lsec.email}). Your coordinator has the final word on what you need.`, 10.5, regular)
+  if (info.basedOn) {
+    y += 2 * s
+    para(`Follows the Diocese of Allentown's ${info.basedOn}.`, 9.5, regular, MUTED)
+  }
   y += 4 * s
 
   for (const section of info.sections) {
@@ -103,35 +109,21 @@ async function draw(info: ChecklistInfo, s: number): Promise<PDFDocument> {
     if (section.intro) text(section.intro, M + bold.widthOfTextAtSize(clean(`${section.title}  `), 12.5 * s), 9.5 * s, regular, MUTED)
     y += 6 * s
     for (const item of section.items) {
-      // The status sits at the right of the label's first line when there's room, else on its own line.
-      const status = clean(item.status)
-      const statusW = regular.widthOfTextAtSize(status, 9.5 * s)
       const textW = right - M - 22
-      const labelOne = bold.widthOfTextAtSize(clean(item.label), 10.5 * s) + statusW + 16 <= textW
       const labelLines = wrap(bold, item.label, 10.5 * s, textW)
       const detailLines = item.detail ? wrap(regular, item.detail, 9 * s, textW) : []
-      ensure((labelLines.length * 12.5 + (labelOne ? 0 : 11) + detailLines.length * 10.5 + 10) * s)
+      ensure((labelLines.length * 12.5 + detailLines.length * 10.5 + 10) * s)
       y += 12 * s
-      // Checkbox, ticked when the volunteer marked it done.
       const box = 11 * s
       const top = y - 9.5 * s
       page.drawRectangle({ x: M, y: H - top - box, width: box, height: box, borderColor: INK, borderWidth: 1 })
-      if (item.done) {
-        page.drawLine({ start: { x: M + box * 0.21, y: H - top - box * 0.5 }, end: { x: M + box * 0.43, y: H - top - box * 0.79 }, thickness: 1.5, color: OK })
-        page.drawLine({ start: { x: M + box * 0.43, y: H - top - box * 0.79 }, end: { x: M + box * 0.88, y: H - top - box * 0.2 }, thickness: 1.5, color: OK })
-      }
-      labelLines.forEach((line, i) => {
-        text(line, M + 22, 10.5 * s, bold)
+      labelLines.forEach((l, i) => {
+        text(l, M + 22, 10.5 * s, bold)
         if (i < labelLines.length - 1) y += 12.5 * s
       })
-      if (labelOne) text(status, right - statusW, 9.5 * s, regular, item.done ? OK : MUTED)
-      else {
-        y += 11.5 * s
-        text(status, M + 22, 9.5 * s, regular, item.done ? OK : MUTED)
-      }
-      for (const line of detailLines) {
+      for (const l of detailLines) {
         y += 10.5 * s
-        text(line, M + 22, 9 * s, regular, MUTED)
+        text(l, M + 22, 9 * s, regular, MUTED)
       }
       y += 3 * s
     }
