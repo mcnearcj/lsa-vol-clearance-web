@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { formatDate, standing, standingLabel, todayISO, type Standing } from '../dates'
+import { standing, standingLabel, todayISO, type Standing } from '../dates'
 import { formInfo } from '../data/forms'
 import type { ItemProgress, Requirement } from '../types'
 
@@ -57,7 +57,7 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
   const [open, setOpen] = useState(false)
   const detailsId = useId()
   const cur: ItemProgress = progress ?? { status: 'todo' }
-  const { standing: st, expiresOn } = standing(req, progress)
+  const { standing: st } = standing(req, progress)
   const isDone = cur.status === 'done'
 
   const markDone = () => onChange({ ...cur, status: 'done', completedOn: cur.completedOn || todayISO() })
@@ -81,19 +81,6 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
 
       <div className="card-status">
         <span className={`badge ${st}`}>{standingLabel[st]}</span>
-        {isDone && (
-          <label className="done-date">
-            <span>{req.validYears ? 'Completed' : 'Done'}</span>
-            <input
-              type="date"
-              value={cur.completedOn ?? ''}
-              max={todayISO()}
-              onChange={(e) => onChange({ ...cur, completedOn: e.target.value })}
-              aria-label={`Date completed for ${req.title}`}
-            />
-          </label>
-        )}
-        {expiresOn && <span className={`renew ${st}`}>{st === 'expired' ? 'Expired' : 'Renew by'} {formatDate(expiresOn)}</span>}
         <span className="spacer" />
         {cur.status === 'na' ? (
           <button className="ghost" onClick={undo}>
