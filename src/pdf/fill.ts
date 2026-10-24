@@ -53,7 +53,7 @@ function put(page: PDFPage, font: PDFFont, text: string, x: number, y: number, m
 
 /** Marks a printed "O" radio glyph or blank with an X / dot. `cx`,`cy` are the centre, from the top. */
 function dot(page: PDFPage, cx: number, cy: number) {
-  page.drawCircle({ x: cx, y: page.getHeight() - cy, size: 3.2, color: INK })
+  page.drawCircle({ x: cx, y: page.getHeight() - cy, size: 3, color: INK })
 }
 
 function check(page: PDFPage, font: PDFFont, cx: number, cy: number) {
@@ -93,23 +93,28 @@ async function fillBackgroundAuth(bytes: Uint8Array, p: Profile, o: FillOptions 
 
   put(page, font, p.ueid, 308, 180, 240)
 
-  if (p.residedInPA === 'yes') check(page, font, 92, 226)
-  if (p.residedInPA === 'no') check(page, font, 182, 226)
+  // Centres of the blanks after "Yes" / "No".
+  if (p.residedInPA === 'yes') check(page, font, 96, 223)
+  if (p.residedInPA === 'no') check(page, font, 182, 223)
   // Position requires interaction with children: this site is for volunteers who do.
-  check(page, font, 156, 273)
+  check(page, font, 167.5, 270)
 
-  const loc = { Parish: 219.5, School: 249, Both: 278.5 } as const
-  if (p.locationType) dot(page, 296, loc[p.locationType])
+  // Centres of the printed "O" glyphs, measured from the diocese's PDF.
+  const loc = { Parish: [296.5, 219.9], School: [297.8, 249.4], Both: [297.3, 279.1] } as const
+  if (p.locationType) {
+    const [x, y] = loc[p.locationType]
+    dot(page, x, y)
+  }
 
-  const pos = { Contractor: 219.5, Employee: 234, Priest: 249, Religious: 263.5, Teacher: 278, Volunteer: 293 } as const
-  if (p.position) dot(page, 422, pos[p.position])
+  const pos = { Contractor: 219.9, Employee: 234.6, Priest: 249.4, Religious: 264.1, Teacher: 279.1, Volunteer: 293.9 } as const
+  if (p.position) dot(page, 422.5, pos[p.position])
 
-  put(page, font, p.lastName, 122, 341, 148)
+  put(page, font, p.lastName, 124, 341, 146)
   put(page, font, p.firstName, 275, 341, 68)
   put(page, font, p.middleName, 347, 341, 50)
 
-  if (p.gender === 'Female') dot(page, 458, 337)
-  if (p.gender === 'Male') dot(page, 458, 351.5)
+  if (p.gender === 'Female') dot(page, 458.5, 337.6)
+  if (p.gender === 'Male') dot(page, 458.5, 352.1)
   put(page, font, p.race, 442, 380, 120)
 
   const { mm, dd, yyyy } = dobParts(p.dob)
@@ -117,7 +122,7 @@ async function fillBackgroundAuth(bytes: Uint8Array, p: Profile, o: FillOptions 
   put(page, font, dd, 168, 415)
   put(page, font, yyyy, 202, 415)
 
-  put(page, font, p.street, 152, 450, 266)
+  put(page, font, p.street, 158, 450, 260)
   put(page, font, p.apt, 430, 450, 130)
   put(page, font, p.city, 152, 488, 190)
   put(page, font, p.state, 347, 488, 75)
@@ -168,6 +173,12 @@ async function fillSocialMedia(bytes: Uint8Array, p: Profile, o: FillOptions = {
   const form = doc.getForm()
   const text = (name: string, value: string) => {
     const field = form.getTextField(name)
+    // The diocese's boxes are 29 pt tall with the text centred, which floats it ~10 pt above the printed line.
+    // Trim each box to sit on its line, and nudge it right so it clears the label before it.
+    for (const w of field.acroField.getWidgets()) {
+      const r = w.getRectangle()
+      w.setRectangle({ x: r.x + 3, y: r.y, width: r.width - 3, height: 16 })
+    }
     field.setText(clean(value))
     field.setFontSize(11)
   }
