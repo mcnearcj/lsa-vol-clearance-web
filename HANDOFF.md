@@ -48,7 +48,8 @@ Everything a school might need to change is edited in a separate program, **the 
 file you keep on your own computer and open by double-clicking. It is **not** uploaded to the website, so nobody else
 can use it. Nothing it does goes live until you upload the file it makes.
 
-You can change: the school name, coordinator and diocese contact; the diocese's checklist name, date and links; every
+You can change: the school name, coordinator and diocese contact; how the page looks at the top and bottom (the crest,
+tagline, school website link, footer address and phone); the diocese's checklist name, date and links; every
 checklist item (steps, links, instruction sheets); the forms; the questions on the Help page; and extra details the
 site asks volunteers for ("My info").
 
@@ -70,6 +71,13 @@ site asks volunteers for ("My info").
 
 **Keep one site folder** (the unzipped `site.zip` plus its `data` folder) on your computer. Uploading it replaces the
 whole site, so it must always contain the `data` folder, or your changes disappear.
+
+### How the site looks
+
+The page is styled to match the school's own website (navy and sky-blue colors, the same fonts, a header with the crest and
+a footer with the address). The fonts are part of the site. **The crest is loaded from the school's own website** each
+time the page opens, so the site doesn't contain a copy of it. To use a different crest, or none, change or clear
+**Logo** under School and contacts. Clearing the tagline, address or phone leaves that part out.
 
 ### Adding or changing a form
 

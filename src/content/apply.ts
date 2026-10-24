@@ -13,7 +13,7 @@ import { contentApplied } from './useContent'
 export function currentContent(): Content {
   return structuredClone({
     version: 1 as const,
-    school: { name: site.schoolName },
+    school: { name: site.schoolName, tagline: site.tagline, homeUrl: site.homeUrl, logoUrl: site.logoUrl, address: site.address, phone: site.phone },
     lsec: site.lsec,
     diocese: site.diocese,
     checklist: {
@@ -37,6 +37,12 @@ export const defaultContent: Content = currentContent()
 
 export function applyContent(c: Content): void {
   site.schoolName = c.school.name
+  // The branding settings are optional; a settings file made before they existed keeps the built-in look.
+  site.tagline = c.school.tagline ?? defaultContent.school.tagline ?? ''
+  site.homeUrl = c.school.homeUrl ?? defaultContent.school.homeUrl ?? ''
+  site.logoUrl = c.school.logoUrl ?? defaultContent.school.logoUrl ?? ''
+  site.address = c.school.address ?? defaultContent.school.address ?? ''
+  site.phone = c.school.phone ?? defaultContent.school.phone ?? ''
   site.lsec = { ...c.lsec }
   site.diocese = { ...site.diocese, ...c.diocese }
   site.checklistName = c.checklist.name

@@ -136,7 +136,7 @@ export function describeChanges(before: Content, after: Content): ChangeGroup[] 
 
   const basics: ChangeEntry[] = []
   const push = (title: string, lines: string[]) => lines.length && basics.push({ title, lines })
-  push('School', fieldLines({ name: 'School name' }, before.school, after.school))
+  push('School', fieldLines({ name: 'School name', tagline: 'Tagline', homeUrl: 'School website', logoUrl: 'Logo address', address: 'Street address', phone: 'Phone' }, before.school, after.school))
   push('Coordinator', fieldLines({ name: 'Name', email: 'Email' }, before.lsec, after.lsec))
   push('Diocese contact', fieldLines({ name: 'Name', title: 'Title', address: 'Address', phone: 'Phone', email: 'Email' }, before.diocese, after.diocese))
   push(

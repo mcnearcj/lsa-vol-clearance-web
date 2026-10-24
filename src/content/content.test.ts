@@ -59,6 +59,35 @@ describe('validateContent', () => {
   })
 })
 
+describe('school branding', () => {
+  it('accepts the built-in header and footer details, and refuses unsafe or malformed ones', () => {
+    expect(validateContent(clone()).ok).toBe(true)
+    const bad = (mutate: (c: Content) => void) => {
+      const c = clone()
+      mutate(c)
+      return validateContent(c).ok
+    }
+    expect(bad((c) => (c.school.logoUrl = 'javascript:alert(1)'))).toBe(false)
+    expect(bad((c) => (c.school.homeUrl = 'not a web address'))).toBe(false)
+    expect(bad((c) => ((c.school as { tagline: unknown }).tagline = 5))).toBe(false)
+    expect(bad((c) => (c.school.logoUrl = ''))).toBe(true) // blank means no logo
+  })
+  it('keeps the built-in look when a settings file predates the branding fields', () => {
+    const c = clone()
+    c.school = { name: 'Old File Academy' }
+    applyContent(c)
+    expect(site.schoolName).toBe('Old File Academy')
+    expect(site.logoUrl).toBe(defaultContent.school.logoUrl)
+    expect(site.homeUrl).toBe(defaultContent.school.homeUrl)
+  })
+  it('lets a school turn parts of the header and footer off', () => {
+    const c = clone()
+    c.school = { ...c.school, logoUrl: '', tagline: '', address: '', phone: '' }
+    applyContent(c)
+    expect([site.logoUrl, site.tagline, site.address, site.phone]).toEqual(['', '', '', ''])
+  })
+})
+
 describe('applyContent', () => {
   it('updates the school, coordinator and placeholders in the text', () => {
     const c = clone()

@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Fonts are bundled so the preview looks like the real site.
-import '@fontsource-variable/public-sans'
-import '@fontsource-variable/source-serif-4'
+import '@fontsource-variable/source-sans-3'
+import '@fontsource-variable/oswald'
 import '../index.css'
 import { setStorageMode } from '../storage'
 import Preview from './Preview'

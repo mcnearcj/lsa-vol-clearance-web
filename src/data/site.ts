@@ -3,6 +3,15 @@
 
 export const site = {
   schoolName: 'La Salle Academy',
+  /** Shown under the school name in the page header ('' for none). */
+  tagline: 'Built on Faith. Bound for Success.',
+  /** The school's own website: the logo and "Home" link go here ('' for none). */
+  homeUrl: 'https://www.lsabear.com/',
+  /** The school's crest, shown in the header and footer ('' for none). It's loaded from the school's own site. */
+  logoUrl: 'https://resources.finalsite.net/images/f_auto,q_auto/v1690818344/adeducatorsorg/pgio0q6cj53cv5tq9diw/LaSalleAcademylogo2016.eps',
+  /** Street address and phone for the footer ('' to leave out). */
+  address: '440 Holland St., Shillington, PA 19607',
+  phone: '610-777-7392',
   /** The diocese's checklist this site follows, and where its role-specific checklists live. */
   checklistName: 'School Volunteer Requirements Checklist',
   checklistRevised: '7/31/2025',

@@ -55,7 +55,7 @@ export interface Group {
 
 export interface Content {
   version: 1
-  school: { name: string }
+  school: { name: string; tagline?: string; homeUrl?: string; logoUrl?: string; address?: string; phone?: string }
   lsec: { name: string; email: string }
   diocese: { name: string; title: string; address: string; phone: string; email: string }
   checklist: {
@@ -117,6 +117,8 @@ export function validateContent(raw: unknown): { ok: true; content: Content } | 
 
   const school = isObj(raw.school) ? raw.school : {}
   str(school, 'name', 'school')
+  for (const k of ['tagline', 'address', 'phone']) str(school, k, 'school', false)
+  for (const k of ['homeUrl', 'logoUrl']) url(school, k, 'school', false)
   const lsec = isObj(raw.lsec) ? raw.lsec : {}
   str(lsec, 'name', 'lsec')
   str(lsec, 'email', 'lsec')

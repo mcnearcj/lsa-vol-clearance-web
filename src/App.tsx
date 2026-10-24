@@ -3,13 +3,14 @@ import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { FormsPanel } from './components/FormsPanel'
 import { Rich } from './components/Rich'
+import { PageHead, SiteFooter, SiteHeader } from './components/SiteChrome'
 import { StoragePrompt } from './components/StoragePrompt'
 import { assetUrl } from './content/assets'
 import { useContentVersion } from './content/useContent'
 import { faq } from './data/faq'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
-import { formatDate, standing } from './dates'
+import { standing } from './dates'
 import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, getStorageMode, setStorageMode, useStored, type StorageMode } from './storage'
 import { emptyProfile, personName, type Progress, type Profile } from './types'
@@ -98,21 +99,21 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
 
   return (
     <div className="app">
-      <header className="masthead">
-        <div className="masthead-inner">
-          <p className="kicker">{site.schoolName} · Diocese of Allentown</p>
-          <h1>Volunteer Clearances</h1>
+      <SiteHeader>
+        <div className="tabs-bar">
+          <nav className="tabs" aria-label="Sections">
+            {tabs.map(([id, label]) => (
+              <button key={id} aria-current={tab === id ? 'page' : undefined} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+                {label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <nav className="tabs" aria-label="Sections">
-          {tabs.map(([id, label]) => (
-            <button key={id} aria-current={tab === id ? 'page' : undefined} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
-              {label}
-            </button>
-          ))}
-        </nav>
-      </header>
+      </SiteHeader>
 
       <main>
+        <PageHead />
+
         {stale && (
           <div className="notice stale" role="alert">
             <p>{STALE_MESSAGE}</p>
@@ -334,19 +335,7 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
         )}
       </main>
 
-      <footer className="foot">
-        <p>
-          Not an official Diocese of Allentown website. Policies and forms from the diocese’s{' '}
-          <a href={site.policiesUrl} target="_blank" rel="noreferrer noopener">
-            Safe Environment Policies page
-          </a>
-          ; requirements from its{' '}
-          <a href={site.requirementsUrl} target="_blank" rel="noreferrer noopener">
-            {site.checklistName}
-          </a>
-          , revised {site.checklistRevised}.{site.checkedOn ? ` Compared with those pages on ${formatDate(site.checkedOn)}.` : ''} Check them for anything newer.
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

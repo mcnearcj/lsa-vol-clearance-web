@@ -22,6 +22,13 @@ npm run lint
 npm run build     # static site in dist/
 ```
 
+## Look
+
+`src/index.css` follows lsabear.com: navy `#0d1d5b`, sky blue `#5eb1e6`, Source Sans 3 (text) and Oswald (navigation and
+buttons), both bundled, a header with the crest and a footer with the address (`src/components/SiteChrome.tsx`). The
+crest, tagline, school link, address and phone are optional settings (`school.logoUrl` etc.); the crest is loaded from the
+school's own website, not stored here. Light and dark follow the visitor's device.
+
 ## Content
 
 The school, coordinator, checklist items, forms, extra "My info" details and Help questions are the **built-in settings**

@@ -11,6 +11,15 @@ export function SchoolSection() {
       <h2>School and contacts</h2>
       <p>These appear across the site and in the instructions wherever you see the coordinator’s name.</p>
       <TextInput label="School name" value={content.school.name} onChange={(v) => update((d) => (d.school.name = v))} />
+      <h3>How the site looks</h3>
+      <p>The page header and footer use these. Leave one blank to leave it out.</p>
+      <div className="ed-grid">
+        <TextInput label="Tagline" value={content.school.tagline ?? ''} onChange={(v) => update((d) => (d.school.tagline = v))} />
+        <TextInput label="School website" value={content.school.homeUrl ?? ''} onChange={(v) => update((d) => (d.school.homeUrl = v))} placeholder="https://" hint="The logo and the Home link go here." />
+        <TextInput label="Logo (image web address)" value={content.school.logoUrl ?? ''} onChange={(v) => update((d) => (d.school.logoUrl = v))} placeholder="https://" hint="Loaded from that address each time the site is opened. Use an address on your school’s own website." />
+        <TextInput label="Street address (footer)" value={content.school.address ?? ''} onChange={(v) => update((d) => (d.school.address = v))} />
+        <TextInput label="Phone (footer)" value={content.school.phone ?? ''} onChange={(v) => update((d) => (d.school.phone = v))} />
+      </div>
       <h3>Local Safe Environment Coordinator (LSEC)</h3>
       <div className="ed-grid">
         <TextInput label="Name" value={content.lsec.name} onChange={(v) => update((d) => (d.lsec.name = v))} />
