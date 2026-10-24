@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { standing, standingLabel, todayISO, type Standing } from '../dates'
 import { formInfo } from '../data/forms'
 import type { ItemProgress, Requirement } from '../types'
+import { Rich } from './Rich'
 
 interface Props {
   req: Requirement
@@ -71,7 +72,9 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
         <StatusIcon st={st} />
         <span className="card-title">
           <span className="title">{req.title}</span>
-          <span className="summary">{req.summary}</span>
+          <span className="summary">
+            <Rich text={req.summary} inline />
+          </span>
           {meta.length > 0 && <span className="meta">{meta.join(' · ')}</span>}
         </span>
         <span className="chev" aria-hidden>
@@ -98,7 +101,11 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
       </div>
 
       <div className="details" id={detailsId} hidden={!open}>
-        {req.note && <p className="callout">{req.note}</p>}
+        {req.note && (
+          <p className="callout">
+            <Rich text={req.note} inline />
+          </p>
+        )}
 
         {req.form && (
           <p className="form-pointer">
@@ -113,7 +120,9 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
         <h4>Steps</h4>
         <ol className="steps">
           {req.steps.map((s) => (
-            <li key={s}>{s}</li>
+            <li key={s}>
+              <Rich text={s} inline />
+            </li>
           ))}
         </ol>
 

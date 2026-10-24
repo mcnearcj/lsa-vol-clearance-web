@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { ProfileForm } from './components/ProfileForm'
 import { RequirementCard } from './components/RequirementCard'
 import { FormsPanel } from './components/FormsPanel'
+import { Rich } from './components/Rich'
 import { StoragePrompt } from './components/StoragePrompt'
+import { faq } from './data/faq'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
-import { standing } from './dates'
+import { formatDate, standing } from './dates'
 import { STALE_EVENT, STALE_MESSAGE } from './staleBuild'
 import { clearAllStored, getStorageMode, setStorageMode, useStored, type StorageMode } from './storage'
 import { emptyProfile, personName, type Progress, type Profile } from './types'
@@ -199,7 +201,9 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
                       {gDone}/{gTotal}
                     </span>
                   </div>
-                  <p className="group-intro">{g.intro}</p>
+                  <p className="group-intro">
+                    <Rich text={g.intro} inline />
+                  </p>
                   {g.id === 'sign' ? (
                     <FormsPanel
                       profile={profile}
@@ -234,7 +238,7 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
               <h2>Help</h2>
               <p>
                 This site follows the diocese’s{' '}
-                <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
+                <a href={asset(site.checklistFile)} target="_blank" rel="noreferrer noopener">
                   {site.checklistName} (PDF, revised {site.checklistRevised})
                 </a>
                 . Its policies and forms come from the diocese’s{' '}
@@ -257,54 +261,29 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
               </address>
               <p>For questions they can’t answer, the diocese’s contact on its forms is:</p>
               <address>
-                Janice Woolley, Background Check / Audit &amp; Training Supervisor
+                {site.diocese.name}, {site.diocese.title}
                 <br />
-                Diocese of Allentown, PO Box F, Allentown, PA 18105-1538
+                {site.diocese.address}
                 <br />
-                610-871-5200 ext. 2258 · <span className="select">jwoolley@allentowndiocese.org</span>
+                {site.diocese.phone} · <span className="select">{site.diocese.email}</span>
               </address>
             </section>
 
             <section className="panel">
               <h3>Questions</h3>
               <dl className="faq">
-                <dt>Do I need to do everything on this list?</dt>
-                <dd>
-                  It depends on your role. The diocese’s{' '}
-                  <a href={asset('forms/requirements-checklist.pdf')} target="_blank" rel="noreferrer noopener">
-                    {site.checklistName}
-                  </a>{' '}
-                  says all school volunteers need everything here, except the driver form, which is only for people who drive for the school. The FBI fingerprint check is for volunteers 18 and older.
-                  <br />
-                  <br />
-                  The diocese also has a{' '}
-                  <a href={site.limitedChecklistUrl} target="_blank" rel="noreferrer noopener">
-                    Limited Volunteer checklist
-                  </a>{' '}
-                  for volunteers whose duties are strictly limited and who don’t serve in a leadership role. They need only the four policy acknowledgments (Sexual Abuse, Code of Conduct, Social Media, CPSL), Protecting God’s Children, and the driver form if they drive: no background checks or Mandated Reporter training.
-                  <br />
-                  <br />
-                  <strong>If you’re not sure which applies to you, ask {site.lsec.name} ({site.lsec.email}) before you start.</strong> Your school decides who counts as a limited volunteer.
-                </dd>
-                <dt>How often do I renew?</dt>
-                <dd>Background checks and the Mandated Reporter training last 5 years. Protecting God’s Children is a one-time training. Your coordinator can tell you when yours are due.</dd>
-                <dt>Which forms need my Social Security Number?</dt>
-                <dd>
-                  Of the forms this site fills in, only the <strong>NSOR application</strong> (the state requires it). The <strong>Background Check Authorization</strong> asks for it from employees only, so volunteers leave it blank. The acknowledgment forms don’t ask for it.
-                  <br />
-                  <br />
-                  Two of the state’s online systems also ask for it when you apply there: the <strong>Child Abuse History</strong> clearance (include it, or your results take longer) and <strong>PATCH</strong> (optional, but recommended).
-                </dd>
-                <dt>How is my Social Security Number handled here?</dt>
-                <dd>It’s only asked for under “Forms to sign”, and only to fill in the files you make there. It’s never saved on your device or sent anywhere. Leave it blank there to write it on the printed form by hand instead.</dd>
+                {faq.map((f) => (
+                  <Fragment key={f.q}>
+                    <dt>{f.q}</dt>
+                    <dd>
+                      <Rich text={f.a} />
+                    </dd>
+                  </Fragment>
+                ))}
                 <dt>Where is my information kept?</dt>
                 <dd>
                   Only in this browser on this device. Nothing is sent to or stored on a server, and forms are filled in on your device.{' '}
                   {mode === 'keep' ? 'You chose to keep your info on this computer, so it stays until you erase it.' : 'You chose to erase your info when you leave, so it’s gone when you close this tab.'}
-                </dd>
-                <dt>I’m using a shared computer. Is that OK?</dt>
-                <dd>
-                  Yes. Choose “erase it when I leave” (the default), or use a private window (Incognito in Chrome, InPrivate in Edge, or Private Browsing in Safari and Firefox). Check the name at the top of each page, and when you’re done, choose “Not you?” or “Erase my data” below. If you see someone else’s name, choose “Not you?” to start fresh.
                 </dd>
               </dl>
             </section>
@@ -362,7 +341,7 @@ function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: 
           <a href={site.requirementsUrl} target="_blank" rel="noreferrer noopener">
             {site.checklistName}
           </a>
-          , revised {site.checklistRevised}. Check those pages for anything newer.
+          , revised {site.checklistRevised}.{site.checkedOn ? ` Compared with those pages on ${formatDate(site.checkedOn)}.` : ''} Check them for anything newer.
         </p>
       </footer>
     </div>

@@ -1,5 +1,8 @@
 import type { InputHTMLAttributes, ReactNode } from 'react'
-import { personName, type Profile } from '../types'
+import { customFields } from '../data/formFields'
+import { site } from '../data/site'
+import { personName, type Profile, type ProfileKey } from '../types'
+import { Rich } from './Rich'
 import { SchoolInput } from './SchoolInput'
 
 interface Props {
@@ -9,9 +12,10 @@ interface Props {
 }
 
 export function ProfileForm({ profile, onChange, onDone }: Props) {
-  const set = <K extends keyof Profile>(key: K, value: Profile[K]) => onChange({ ...profile, [key]: value })
+  const set = <K extends ProfileKey>(key: K, value: Profile[K]) => onChange({ ...profile, [key]: value })
+  const setExtra = (id: string, value: string) => onChange({ ...profile, extra: { ...profile.extra, [id]: value } })
 
-  const text = (key: keyof Profile, label: string, props: InputHTMLAttributes<HTMLInputElement> = {}, hint?: ReactNode) => (
+  const text = (key: ProfileKey, label: string, props: InputHTMLAttributes<HTMLInputElement> = {}, hint?: ReactNode) => (
     <label className="field">
       <span>{label}</span>
       <input id={`p-${key}`} value={profile[key]} onChange={(e) => set(key, e.target.value as never)} {...props} />
@@ -19,7 +23,7 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
     </label>
   )
 
-  const choice = <K extends keyof Profile>(key: K, label: string, options: [Profile[K], string][]) => (
+  const choice = <K extends ProfileKey>(key: K, label: string, options: [Profile[K], string][]) => (
     <label className="field">
       <span>{label}</span>
       <select id={`p-${key}`} value={profile[key]} onChange={(e) => set(key, e.target.value as Profile[K])}>
@@ -32,6 +36,8 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
       </select>
     </label>
   )
+
+  const extras = customFields.filter((f) => !f.sensitive)
 
   return (
     <form className="profile" onSubmit={(e) => e.preventDefault()} autoComplete="on">
@@ -110,6 +116,40 @@ export function ProfileForm({ profile, onChange, onDone }: Props) {
           {text('ueid', 'UEID', {}, 'Only if your coordinator gave you one')}
         </div>
       </fieldset>
+
+      {extras.length > 0 && (
+        <fieldset>
+          <legend>More details</legend>
+          <p className="used-on">Asked for by {site.schoolName}’s forms</p>
+          <div className="grid">
+            {extras.map((f) => {
+              const value = profile.extra?.[f.id] ?? ''
+              return (
+                <label className="field" key={f.id}>
+                  <span>{f.label}</span>
+                  {f.type === 'choice' || f.type === 'yesno' ? (
+                    <select id={`x-${f.id}`} value={value} onChange={(e) => setExtra(f.id, e.target.value)}>
+                      <option value="">Choose…</option>
+                      {(f.type === 'yesno' ? ['Yes', 'No'] : f.options ?? []).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input id={`x-${f.id}`} type={f.type === 'date' ? 'date' : 'text'} value={value} onChange={(e) => setExtra(f.id, e.target.value)} />
+                  )}
+                  {f.help && (
+                    <small>
+                      <Rich text={f.help} inline />
+                    </small>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      )}
 
       <div className="form-end">
         <button type="button" className="primary" onClick={onDone}>

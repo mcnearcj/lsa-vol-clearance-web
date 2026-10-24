@@ -19,6 +19,8 @@ export interface Profile {
   race: string
   residedInPA: '' | 'yes' | 'no'
   ueid: string
+  /** Answers to extra details the school added (content.json), by field id. */
+  extra: Record<string, string>
 }
 
 export const emptyProfile: Profile = {
@@ -41,6 +43,7 @@ export const emptyProfile: Profile = {
   race: '',
   residedInPA: '',
   ueid: '',
+  extra: {},
 }
 
 export type Status = 'todo' | 'started' | 'done' | 'na'
@@ -53,9 +56,14 @@ export interface ItemProgress {
 
 export type Progress = Record<string, ItemProgress>
 
-export type FormId = 'bgauth' | 'sexabuse' | 'conduct' | 'social' | 'cpsl' | 'nsor'
+/** A form's id: one of the six built-in layouts or a form the school added. */
+export type FormId = string
 
-export type GroupId = 'checks' | 'sign' | 'training' | 'driving'
+/** The built-in "My info" details (everything on Profile except the school's own extras). */
+export type ProfileKey = Exclude<keyof Profile, 'extra'>
+
+/** A checklist section's id. The built-in ones are checks, sign, training and driving. */
+export type GroupId = string
 
 export interface Requirement {
   id: string
@@ -75,6 +83,8 @@ export interface Requirement {
   steps: string[]
   /** A form for this item that's made under "Forms to sign". */
   form?: FormId
+  /** Extra line under this item on the submission checklist. */
+  handInDetail?: string
   /** Reference PDFs from the diocese (instructions, originals). */
   references?: { label: string; file: string }[]
   /** What the volunteer hands in for this item, for the submission checklist. */

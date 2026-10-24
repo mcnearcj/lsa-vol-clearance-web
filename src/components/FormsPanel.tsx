@@ -1,13 +1,17 @@
 import '@fontsource-variable/dancing-script'
 import { useEffect, useRef, useState } from 'react'
 import { makeChecklist } from '../checklistDownload'
-import { missingFields } from '../data/formFields'
+import { customFields, missingFields, sourcesOf } from '../data/formFields'
 import { FORMS, FORM_ORDER } from '../data/forms'
+import { Rich } from './Rich'
 import { site } from '../data/site'
 import { formatDate, todayISO, todayUS } from '../dates'
 import { ssnAsTyped } from '../ssn'
 import { isStaleBuildError, STALE_MESSAGE } from '../staleBuild'
 import { personName, ssnOnAuthorization, type FormId, type ItemProgress, type Profile, type Progress } from '../types'
+
+/** The forms the site fills in. Forms that are only printed aren't part of a download. */
+const fillable = () => FORM_ORDER.filter((id) => FORMS.find((f) => f.id === id)?.kind !== 'download')
 
 // The six forms are filled in automatically, so they're handled together here instead of as checklist items:
 // pick the forms (and the submission checklist), optionally sign on screen and add an SSN, then open or download
@@ -65,7 +69,8 @@ function cropToInk(src: HTMLCanvasElement): HTMLCanvasElement | null {
 }
 
 export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: Props) {
-  const [chosen, setChosen] = useState<FormId[]>(FORM_ORDER)
+  const [chosen, setChosen] = useState<FormId[]>(fillable)
+  const [sensitive, setSensitive] = useState<Record<string, string>>({})
   const [withChecklist, setWithChecklist] = useState(true)
   const [how, setHow] = useState<'paper' | 'screen'>('paper')
   const [sigMode, setSigMode] = useState<'draw' | 'type'>('draw')
@@ -164,13 +169,20 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
   // Changing what's chosen clears files made from the old choices, so the links always match the boxes.
   const toggle = (id: FormId) => {
     releaseFiles()
-    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : FORM_ORDER.filter((f) => f === id || c.includes(f))))
+    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : fillable().filter((f) => f === id || c.includes(f))))
   }
   const chooseHow = (h: 'paper' | 'screen') => {
     releaseFiles()
     setHow(h)
   }
-  const ssnForms = [chosen.includes('nsor') && 'NSOR application', chosen.includes('bgauth') && ssnOnAuthorization(profile) && 'Background Check Authorization'].filter(Boolean) as string[]
+  const chosenForms = FORMS.filter((f) => chosen.includes(f.id))
+  const ssnForms = [
+    chosen.includes('nsor') && 'NSOR application',
+    chosen.includes('bgauth') && ssnOnAuthorization(profile) && 'Background Check Authorization',
+    ...chosenForms.filter((f) => sourcesOf(f).some((src) => src.kind === 'ssn')).map((f) => f.label),
+  ].filter(Boolean) as string[]
+  // Extra details the school marked "sensitive": asked here, used for these files only, never saved.
+  const askedHere = customFields.filter((c) => c.sensitive && chosenForms.some((f) => sourcesOf(f).some((src) => src.kind === 'field' && src.field === c.id)))
   const ssnDigits = ssn.replace(/\D/g, '')
   const ssnOk = ssnDigits.length === 0 || ssnDigits.length === 9
   const hasSignature = sigMode === 'draw' ? inked : typedName.trim().length > 1
@@ -213,7 +225,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
         const { fillAll } = await import('../pdf/fill')
         const signed = signedOn ? { signature: await signatureImage(), date: signedOn } : undefined
         const ssnUsed = ssnForms.length > 0 && ssnDigits ? ssnDigits : undefined
-        const { bytes, filename } = await fillAll(profile, loadBytes, { signed, ssn: ssnUsed }, chosen)
+        const { bytes, filename } = await fillAll(profile, loadBytes, { signed, ssn: ssnUsed, sensitive }, chosen)
         made.push({
           title: 'Forms to hand in',
           note: `${chosen.length} ${chosen.length === 1 ? 'form' : 'forms'}, ${signedOn ? `signed and dated ${signedOn}` : 'ready to print, sign and date'}`,
@@ -229,6 +241,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
       }
       setFiles(made)
       setSsn('')
+      setSensitive({})
     } catch (e) {
       if (isStaleBuildError(e)) setStale(true)
       else setError(e instanceof Error ? e.message : 'The files could not be made. Try again.')
@@ -244,19 +257,28 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
       <fieldset className="pick">
         <legend>Choose what you need</legend>
         <ul>
-          {FORMS.map(({ id, label, policy, note }) => {
+          {FORMS.filter((f) => f.kind !== 'download').map(({ id, label, policy, note, sourceUrl }) => {
             return (
               <li key={id}>
                 <label className="check">
                   <input id={`form-${id}`} type="checkbox" checked={chosen.includes(id)} onChange={() => toggle(id)} />
                   <span>
                     {label}
-                    {note && <small>{note}</small>}
+                    {note && (
+                      <small>
+                        <Rich text={note} inline />
+                      </small>
+                    )}
                   </span>
                 </label>
                 {policy && (
                   <a href={policy} target="_blank" rel="noreferrer noopener">
                     Read the policy<span className="ext" aria-label="(opens in a new tab)">↗</span>
+                  </a>
+                )}
+                {!policy && sourceUrl && (
+                  <a href={sourceUrl} target="_blank" rel="noreferrer noopener">
+                    Official source<span className="ext" aria-label="(opens in a new tab)">↗</span>
                   </a>
                 )}
               </li>
@@ -276,6 +298,29 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
           </li>
         </ul>
       </fieldset>
+
+      {FORMS.some((f) => f.kind === 'download') && (
+        <fieldset className="pick">
+          <legend>Also needed: print and fill in by hand</legend>
+          <ul>
+            {FORMS.filter((f) => f.kind === 'download').map((f) => (
+              <li key={f.id}>
+                <span>
+                  {f.label}
+                  {f.note && (
+                    <small>
+                      <Rich text={f.note} inline />
+                    </small>
+                  )}
+                </span>
+                <a href={f.file ? `${import.meta.env.BASE_URL}${f.file}` : f.sourceUrl} target="_blank" rel="noreferrer noopener">
+                  Open the form<span className="ext" aria-label="(opens in a new tab)">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      )}
 
       {chosen.length > 0 && missing.length > 0 && (
         <div className="missing" role="alert">
@@ -379,6 +424,29 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
             </button>
           </div>
           <small id="ssn-help">{ssnOk ? 'Never saved. Used only for the files you make below.' : 'Enter all 9 digits, or leave it blank.'}</small>
+        </fieldset>
+      )}
+
+      {askedHere.length > 0 && (
+        <fieldset className="pick">
+          <legend>More details for these forms</legend>
+          <p>Used for the files you make below only. Never saved.</p>
+          {askedHere.map((f) => (
+            <label className="field" key={f.id}>
+              <span>{f.label}</span>
+              <input
+                type={f.type === 'date' ? 'date' : 'text'}
+                autoComplete="off"
+                value={sensitive[f.id] ?? ''}
+                onChange={(e) => setSensitive({ ...sensitive, [f.id]: e.target.value })}
+              />
+              {f.help && (
+                <small>
+                  <Rich text={f.help} inline />
+                </small>
+              )}
+            </label>
+          ))}
         </fieldset>
       )}
 

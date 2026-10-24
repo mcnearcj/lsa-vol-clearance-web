@@ -1,5 +1,4 @@
 import type { GroupId, Requirement } from '../types'
-import { site } from './site'
 
 // The items volunteers track one by one: background checks, trainings and the driver form. The six signable forms
 // are in forms.ts. Sources: the diocese's "Safe Environment School Volunteer Requirements Checklist" (rev. 7/31/2025,
@@ -47,7 +46,7 @@ export const requirements: Requirement[] = [
       { label: 'State instructions for this clearance', href: 'https://www.pa.gov/services/dhs/request-a-child-abuse-history-clearance' },
     ],
     steps: [
-      `Ask ${site.lsec.name}, your LSEC, for the free payment code.`,
+      'Ask {lsec}, your LSEC, for the free payment code.',
       'Go to the PA Child Welfare Portal (link below) and click “Create an Individual Account”. Use Chrome or Firefox; people often have trouble with Safari. Create a Keystone ID (a username you will remember, e.g. lastname + first initial + middle initial). Write down your security questions and answers exactly.',
       'You will get two emails: your Keystone ID and a temporary password. Print the first one for your records.',
       'Log in with “Individual Login”, then “Access my Clearance”. Verify your identity by security question or emailed code.',
@@ -74,7 +73,7 @@ export const requirements: Requirement[] = [
     validYears: 5,
     links: [{ label: 'IdentoGO registration', href: 'https://uenroll.identogo.com' }],
     steps: [
-      `Get the payment code from ${site.lsec.name}, your LSEC.`,
+      'Get the payment code from {lsec}, your LSEC.',
       'Go to the IdentoGO registration site and enter the Service Code for volunteers: 1KG6ZJ (employees use 1KG786).',
       'Choose “Schedule or Manage Appointment” and enter your personal information. Fields marked with a red * are required. Enter an email if you want a receipt.',
       'Employer information: Diocese of Allentown, United States, PO Box F, Allentown, Pennsylvania 18105-1538. When asked if your mailing address is the same as your residential address, choose NO, then enter your home address in the residential area.',
@@ -136,6 +135,7 @@ export const requirements: Requirement[] = [
     handIn: 'Request for Driver Information Form (parts C and E)',
     summary: 'Only if you drive on behalf of your parish or school.',
     optional: true,
+    handInDetail: 'Ask your LSEC for the form. Mail the original to the Diocese of Allentown Safe Environment Office, PO Box F, Allentown PA 18105-1538.',
     links: [],
     steps: [
       'If you will not drive for the parish or school, mark this “Not applicable”.',
@@ -153,6 +153,7 @@ export const requirements: Requirement[] = [
     time: 'Processing takes about 14 days',
     validYears: 5,
     note: 'You can add your Social Security Number when you make your forms, or write it on the printed form. The site never stores it.',
+    handInDetail: 'The state mails or emails this after you send the NSOR application.',
     links: [
       {
         label: 'PA DHS NSOR application, CY 1001 (original)',
@@ -172,12 +173,12 @@ export const groups: { id: GroupId; title: string; intro: string }[] = [
   {
     id: 'checks',
     title: 'Background checks',
-    intro: `Start these first. Some take a few weeks to come back. Ask ${site.lsec.name}, your LSEC, for the payment codes.`,
+    intro: 'Start these first. Some take a few weeks to come back. Ask {lsec}, your LSEC, for the payment codes.',
   },
   {
     id: 'sign',
     title: 'Forms to sign',
-    intro: `Read each policy, then make your forms. They’re filled in with your info. Sign them on screen, or print and sign by hand, then give them to ${site.lsec.name}.`,
+    intro: 'Read each policy, then make your forms. They’re filled in with your info. Sign them on screen, or print and sign by hand, then give them to {lsec}.',
   },
   {
     id: 'training',

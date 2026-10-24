@@ -5,12 +5,16 @@ import '@fontsource-variable/public-sans'
 import '@fontsource-variable/source-serif-4'
 import './index.css'
 import App from './App.tsx'
+import { loadContent } from './content/load'
 import { watchForStaleBuild } from './staleBuild'
 
 watchForStaleBuild()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+// The school's settings load first so the page draws once, with the right names and forms.
+void loadContent().then(() =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  ),
 )

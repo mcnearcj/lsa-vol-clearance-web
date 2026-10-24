@@ -1,6 +1,6 @@
 import { formatDate, standing } from '../dates'
 import type { FormId, Progress, Requirement } from '../types'
-import { formInfo } from './forms'
+import { FORMS, formInfo } from './forms'
 import { requirements } from './requirements'
 import { site } from './site'
 
@@ -19,8 +19,6 @@ export interface SubmissionSection {
   intro?: string
   items: SubmissionItem[]
 }
-
-const byId = (id: string) => requirements.find((r) => r.id === id)!
 
 function statusOf(req: Requirement, progress: Progress): { status: string; done: boolean } {
   const p = progress[req.id]
@@ -55,41 +53,42 @@ export function submissionChecklist(progress: Progress, download?: DownloadInfo)
       return download.signedOn
         ? { label, detail, status: `Signed on screen ${download.signedOn}`, done: true }
         : { label, detail, status: 'In this download: print it, then sign and date it', done: false }
+    if (!handedIn && formInfo(id).kind === 'download') return { label, detail, status: 'Print it, fill it in by hand, then sign and date it', done: false }
     if (handedIn) return { label, detail, status: `Handed in${progress.forms?.completedOn ? ` ${formatDate(progress.forms.completedOn)}` : ''}`, done: true }
     return { label, detail, status: 'Not done yet', done: false }
   }
-  const resultItem = (id: string, detail?: string): SubmissionItem => ({ label: byId(id).handIn, detail, ...statusOf(byId(id), progress) })
+  const resultItem = (r: Requirement): SubmissionItem => ({ label: r.handIn, detail: r.handInDetail, ...statusOf(r, progress) })
+  const skipped = (r: Requirement) => progress[r.id]?.status === 'na'
+  const byNumber = (a: Requirement, b: Requirement) => a.number - b.number
+  // Forms the school adds that are only printed (not filled in) are still handed in with the rest.
+  const toLsec = FORMS.filter((f) => f.handTo === 'lsec')
+  const toState = FORMS.filter((f) => f.handTo === 'state')
 
   const sections: SubmissionSection[] = [
     {
       title: 'Signed forms',
       intro: `Give these to ${site.lsec.name}.`,
-      items: (['sexabuse', 'conduct', 'social', 'cpsl', 'bgauth'] as FormId[]).map((id) => formItem(id)),
-    },
-    {
-      title: 'Send to the state',
-      items: [
-        formItem('nsor', 'Mail it, scan and email it to RA-PWNSOR@pa.gov, or drop it off. It takes about 14 days.'),
-      ],
-    },
-    {
-      title: 'Certificates and results',
-      intro: `Give these to ${site.lsec.name} too.`,
-      items: [
-        resultItem('patch'),
-        resultItem('childabuse'),
-        resultItem('fbi'),
-        resultItem('pgc'),
-        resultItem('mandated'),
-        resultItem('nsor', 'The state mails or emails this after you send the NSOR application.'),
-      ],
+      items: toLsec.map((f) => formItem(f.id, f.handInDetail)),
     },
   ]
-  if (progress.mvr?.status !== 'na') {
+  if (toState.length)
+    sections.push({
+      title: 'Send to the state',
+      items: toState.map((f) => formItem(f.id, f.handInDetail)),
+    })
+  sections.push({
+    title: 'Certificates and results',
+    intro: `Give these to ${site.lsec.name} too.`,
+    items: requirements
+      .filter((r) => r.group !== 'driving' && !skipped(r))
+      .sort(byNumber)
+      .map(resultItem),
+  })
+  const driving = requirements.filter((r) => r.group === 'driving' && !skipped(r)).sort(byNumber)
+  if (driving.length)
     sections.push({
       title: 'Only if you drive for the school',
-      items: [resultItem('mvr', 'Ask your LSEC for the form. Mail the original to the Diocese of Allentown Safe Environment Office, PO Box F, Allentown PA 18105-1538.')],
+      items: driving.map(resultItem),
     })
-  }
   return sections
 }

@@ -1,5 +1,7 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
-import { FORM_ORDER } from '../data/forms'
+import { PDFCheckBox, PDFDocument, PDFDropdown, PDFFont, PDFPage, PDFRadioGroup, PDFSignature, PDFTextField, StandardFonts, rgb } from 'pdf-lib'
+import type { FieldSource, Placement } from '../content/schema'
+import { customFields, valueOfField } from '../data/formFields'
+import { FORMS, FORM_ORDER, type FormInfo } from '../data/forms'
 import { ssnOnAuthorization, type FormId, type Profile } from '../types'
 
 // All filling happens in the browser. Nothing is uploaded anywhere.
@@ -19,6 +21,8 @@ export interface FillOptions {
   ssn?: string
   /** Lock the forms' fill-in boxes into the page (needed when combining forms into one file). */
   flatten?: boolean
+  /** Answers to the school's "sensitive" extra details: used for this download only, never stored. */
+  sensitive?: Record<string, string>
 }
 
 const INK = rgb(0.05, 0.1, 0.45)
@@ -231,6 +235,102 @@ async function fillNsor(bytes: Uint8Array, p: Profile, o: FillOptions = {}): Pro
   return doc.save()
 }
 
+// --- Forms the school adds: PDFs with fields ("fillable") or with boxes placed on the page ("placed") ---
+
+/** What a source says to write for this person, or '' when it has nothing (blank, or not signing on screen). */
+function sourceText(src: FieldSource, p: Profile, o: FillOptions): string {
+  switch (src.kind) {
+    case 'text':
+      return src.text
+    case 'name':
+      return fullName(p)
+    case 'date':
+      return o.signed?.date ?? ''
+    case 'ssn':
+      return o.ssn ? ssnFmt(o.ssn) : ''
+    case 'signature':
+      return ''
+    case 'field': {
+      if (customFields.find((f) => f.id === src.field)?.sensitive) return o.sensitive?.[src.field] ?? ''
+      const v = valueOfField(p, src.field)
+      if (src.field === 'dob') {
+        const { mm, dd, yyyy } = dobParts(v)
+        return mm ? `${mm}/${dd}/${yyyy}` : ''
+      }
+      if (src.field === 'phone') return phoneFmt(v)
+      if (src.field === 'residedInPA') return v === 'yes' ? 'Yes' : v === 'no' ? 'No' : ''
+      return v
+    }
+  }
+}
+
+const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+const truthy = (v: string) => v.trim() !== '' && !/^(no|false|0)$/i.test(v.trim())
+
+/** Draws the signature image inside a box given in PDF points from the bottom-left (a field's rectangle). */
+async function signInRect(doc: PDFDocument, page: PDFPage, png: Uint8Array, r: { x: number; y: number; width: number; height: number }) {
+  const img = await doc.embedPng(png)
+  const scale = Math.min(r.width / img.width, r.height / img.height)
+  page.drawImage(img, { x: r.x, y: r.y, width: img.width * scale, height: img.height * scale })
+}
+
+async function fillFillable(bytes: Uint8Array, p: Profile, info: FormInfo, o: FillOptions = {}): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes)
+  const form = doc.getForm()
+  for (const [name, src] of Object.entries(info.mapping ?? {})) {
+    const field = form.getFieldMaybe(name)
+    if (!field) continue
+    if (src.kind === 'signature') {
+      if (!o.signed) continue
+      const widget = field.acroField.getWidgets()[0]
+      const page = doc.getPages().find((pg) => pg.ref === widget?.P()) ?? doc.getPage(0)
+      if (widget) await signInRect(doc, page, o.signed.signature, widget.getRectangle())
+      continue
+    }
+    const value = sourceText(src, p, o)
+    if (field instanceof PDFTextField) {
+      field.setText(clean(value))
+    } else if (field instanceof PDFCheckBox) {
+      if (truthy(value)) field.check()
+      else field.uncheck()
+    } else if (field instanceof PDFDropdown || field instanceof PDFRadioGroup) {
+      const match = field.getOptions().find((opt) => sameText(opt, value))
+      if (match) field.select(match)
+    }
+  }
+  // Signature boxes are drawn on, not filled, and an empty one can't be flattened.
+  for (const f of form.getFields()) if (f instanceof PDFSignature) form.removeField(f)
+  form.updateFieldAppearances(await doc.embedFont(StandardFonts.Helvetica))
+  if (o.signed || o.flatten) form.flatten()
+  return doc.save()
+}
+
+async function fillPlaced(bytes: Uint8Array, p: Profile, info: FormInfo, o: FillOptions = {}): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(bytes)
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+  for (const pl of info.placements ?? ([] as Placement[])) {
+    if (pl.page < 0 || pl.page >= doc.getPageCount()) continue
+    if (pl.when && !sameText(valueOfField(p, pl.when.field), pl.when.equals)) continue
+    const page = doc.getPage(pl.page)
+    if (pl.source.kind === 'signature') {
+      if (o.signed) await drawSignature(doc, page, o.signed.signature, { x: pl.x, top: pl.y, w: pl.w, h: pl.h })
+      continue
+    }
+    if (pl.mark === 'dot') {
+      dot(page, pl.x + pl.w / 2, pl.y + pl.h / 2)
+      continue
+    }
+    if (pl.mark === 'x') {
+      check(page, font, pl.x + pl.w / 2, pl.y + pl.h / 2)
+      continue
+    }
+    const size = pl.size ?? Math.max(7, Math.min(11, pl.h * 0.8))
+    // Baseline a little above the bottom of the box, so the text sits on the line the box was drawn along.
+    put(page, font, sourceText(pl.source, p, o), pl.x + 1, pl.y + pl.h - Math.min(3, pl.h * 0.2), Math.max(1, pl.w - 2), size)
+  }
+  return doc.save()
+}
+
 // --- The CPSL acknowledgment is re-typeset here because the diocese only publishes it as a scan ---
 
 const LETTER: [number, number] = [612, 792]
@@ -339,25 +439,34 @@ const fileStem = (p: Profile) => {
 
 export async function fillForm(id: FormId, p: Profile, load: LoadBytes, o: FillOptions = {}): Promise<{ bytes: Uint8Array; filename: string }> {
   const suffix = fileStem(p)
+  const info = FORMS.find((f) => f.id === id)
+  if (!info) throw new Error(`Unknown form: ${id}`)
+  const stem = id.replace(/[^A-Za-z0-9]+/g, '-')
+  if (info.kind === 'fillable' && info.file) return { bytes: await fillFillable(await load(info.file), p, info, o), filename: `${stem}${suffix}.pdf` }
+  if (info.kind === 'placed' && info.file) return { bytes: await fillPlaced(await load(info.file), p, info, o), filename: `${stem}${suffix}.pdf` }
+  if (info.kind === 'download') throw new Error(`${info.label} is a form to print, not one the site fills in.`)
+  const file = (fallback: string) => info.file ?? fallback
   switch (id) {
     case 'bgauth':
-      return { bytes: await fillBackgroundAuth(await load('forms/background-check-authorization.pdf'), p, o), filename: `background-check-authorization${suffix}.pdf` }
+      return { bytes: await fillBackgroundAuth(await load(file('forms/background-check-authorization.pdf')), p, o), filename: `background-check-authorization${suffix}.pdf` }
     case 'sexabuse':
       return {
-        bytes: await fillAcknowledgment(await load('forms/sexual-abuse-acknowledgement.pdf'), p, { signBaseline: 467, locationBaseline: 523, nameBaseline: 567 }, o),
+        bytes: await fillAcknowledgment(await load(file('forms/sexual-abuse-acknowledgement.pdf')), p, { signBaseline: 467, locationBaseline: 523, nameBaseline: 567 }, o),
         filename: `sexual-abuse-acknowledgment${suffix}.pdf`,
       }
     case 'conduct':
       return {
-        bytes: await fillAcknowledgment(await load('forms/code-of-conduct-acknowledgement.pdf'), p, { signBaseline: 453, locationBaseline: 509, nameBaseline: 553 }, o),
+        bytes: await fillAcknowledgment(await load(file('forms/code-of-conduct-acknowledgement.pdf')), p, { signBaseline: 453, locationBaseline: 509, nameBaseline: 553 }, o),
         filename: `code-of-conduct-acknowledgment${suffix}.pdf`,
       }
     case 'social':
-      return { bytes: await fillSocialMedia(await load('forms/social-media-acknowledgement.pdf'), p, o), filename: `social-media-acknowledgment${suffix}.pdf` }
+      return { bytes: await fillSocialMedia(await load(file('forms/social-media-acknowledgement.pdf')), p, o), filename: `social-media-acknowledgment${suffix}.pdf` }
     case 'cpsl':
       return { bytes: await fillCpsl(p, o), filename: `cpsl-acknowledgment${suffix}.pdf` }
     case 'nsor':
-      return { bytes: await fillNsor(await load('forms/nsor-application.pdf'), p, o), filename: `nsor-application${suffix}.pdf` }
+      return { bytes: await fillNsor(await load(file('forms/nsor-application.pdf')), p, o), filename: `nsor-application${suffix}.pdf` }
+    default:
+      throw new Error(`Unknown form: ${id}`)
   }
 }
 
@@ -365,7 +474,7 @@ export async function fillForm(id: FormId, p: Profile, load: LoadBytes, o: FillO
 export async function fillAll(p: Profile, load: LoadBytes, o: FillOptions = {}, forms: FormId[] = FORM_ORDER): Promise<{ bytes: Uint8Array; filename: string }> {
   const out = await PDFDocument.create()
   out.setTitle(`Volunteer clearance forms - ${fullName(p) || 'volunteer'}`)
-  for (const id of FORM_ORDER.filter((f) => forms.includes(f))) {
+  for (const id of FORM_ORDER.filter((f) => forms.includes(f) && FORMS.find((x) => x.id === f)?.kind !== 'download')) {
     const filled = await PDFDocument.load((await fillForm(id, p, load, { ...o, flatten: true })).bytes)
     const pages = await out.copyPages(filled, filled.getPageIndices())
     pages.forEach((pg) => out.addPage(pg))
