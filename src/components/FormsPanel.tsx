@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { makeChecklist } from '../checklistDownload'
 import { customFields, missingFields, sourcesOf } from '../data/formFields'
 import { FORMS, FORM_ORDER } from '../data/forms'
+import { assetUrl } from '../content/assets'
+import { useContentVersion } from '../content/useContent'
 import { Rich } from './Rich'
 import { site } from '../data/site'
 import { formatDate, todayISO, todayUS } from '../dates'
@@ -36,7 +38,7 @@ const SCRIPT_FONT = '"Dancing Script Variable", "Brush Script MT", cursive'
 
 
 const loadBytes = async (file: string) => {
-  const res = await fetch(`${import.meta.env.BASE_URL}${file}`)
+  const res = await fetch(assetUrl(file))
   if (!res.ok) throw new Error(`Could not load the blank form (${file}). Check your connection and try again.`)
   return new Uint8Array(await res.arrayBuffer())
 }
@@ -70,6 +72,18 @@ function cropToInk(src: HTMLCanvasElement): HTMLCanvasElement | null {
 
 export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: Props) {
   const [chosen, setChosen] = useState<FormId[]>(fillable)
+  // In the editor's preview the forms can change while the page is open: keep the choices valid and tick new forms.
+  const version = useContentVersion()
+  const knownForms = useRef(new Set(fillable()))
+  useEffect(() => {
+    const all = fillable()
+    const added = all.filter((id) => !knownForms.current.has(id))
+    knownForms.current = new Set(all)
+    setChosen((c) => {
+      const next = all.filter((id) => c.includes(id) || added.includes(id))
+      return next.length === c.length && next.every((id, i) => id === c[i]) ? c : next
+    })
+  }, [version])
   const [sensitive, setSensitive] = useState<Record<string, string>>({})
   const [withChecklist, setWithChecklist] = useState(true)
   const [how, setHow] = useState<'paper' | 'screen'>('paper')
@@ -313,7 +327,7 @@ export function FormsPanel({ profile, progress, onFormsProgress, onEditInfo }: P
                     </small>
                   )}
                 </span>
-                <a href={f.file ? `${import.meta.env.BASE_URL}${f.file}` : f.sourceUrl} target="_blank" rel="noreferrer noopener">
+                <a href={f.file ? assetUrl(f.file) : f.sourceUrl} target="_blank" rel="noreferrer noopener">
                   Open the form<span className="ext" aria-label="(opens in a new tab)">↗</span>
                 </a>
               </li>

@@ -1,4 +1,5 @@
 import { site } from '../data/site'
+import { assetUrl } from './assets'
 
 /** Fills the placeholders the school's text can use ({lsec}, {school}…) with the current settings. */
 export function fill(text: string): string {
@@ -20,7 +21,7 @@ export type Inline = { type: 'text' | 'bold'; text: string } | { type: 'link'; t
 /** Where a link in school text may go: a web address, or a PDF that ships with the site (forms/ or data/). */
 export function safeHref(href: string): string | null {
   if (/^https?:\/\/[^\s]+$/i.test(href)) return href
-  if (/^(forms|data)\/[A-Za-z0-9._\-/ ]+$/i.test(href) && !href.includes('..')) return `${import.meta.env.BASE_URL}${href}`
+  if (/^(forms|data)\/[A-Za-z0-9._\-/ ]+$/i.test(href) && !href.includes('..')) return assetUrl(href)
   return null
 }
 

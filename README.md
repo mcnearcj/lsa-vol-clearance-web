@@ -38,8 +38,13 @@ fields mapped to My info) and `placed` (boxes positioned on any PDF).
 `npm run build:editor` writes `dist-editor/editor.html`, one self-contained file (`src/editor/`) that opens by
 double-clicking. It loads the current settings from the live site's address (needs CORS on `data/` and `forms/`; `public/_headers`
 does this for Cloudflare Pages and Netlify) or from a `content.json` file, lets the user attach PDFs, map PDF fields,
-place, move and resize boxes on a PDF with a live preview, shows a detailed collapsible list of changes, and downloads `site-data.zip` (a `data/` folder to copy next to `index.html`). It is not part of the
-published site. `npm run build:all` builds both.
+place, move and resize boxes on a PDF with a live preview, shows a detailed collapsible list of changes, opens a live preview of the real site, and downloads `site-data.zip` (a `data/` folder to copy next to `index.html`). It is not part of the
+published site. `npm run build:all` builds the site, then the editor.
+
+The preview is the real site (`src/preview/`, built by `npm run build:preview` into `dist-preview/preview.html`) embedded in
+`editor.html`. The editor opens it in a new tab and posts it the unsaved content and attached PDFs; the preview accepts
+messages only from the window that opened it. `src/content/assets.ts` is how it finds PDFs (from the live site, or from
+PDFs attached in the editor). `npm run build:editor` builds the preview first.
 
 Edit the built-in settings directly in `src/data/` for changes you want everywhere; blank forms live in `public/forms/`.
 Keep this branch up to date with `git merge main`.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import previewHtml from '../../dist-preview/preview.html?raw'
 import { applyContent, defaultContent } from '../content/apply'
 import { validateContent, type Content } from '../content/schema'
 import { EdContext, type Ed } from './context'
@@ -86,6 +87,8 @@ export default function EditorApp() {
   const [phoneWarn, setPhoneWarn] = useState(looksLikePhone)
   const pick = useRef<HTMLInputElement>(null)
   const remote = useRef(new Map<string, Promise<Uint8Array | undefined>>())
+  const previewWin = useRef<Window | null>(null)
+  const [previewNote, setPreviewNote] = useState('')
 
   const groups = useMemo(() => describeChanges(original, content), [original, content])
   const changed = countChanges(groups)
@@ -103,6 +106,47 @@ export default function EditorApp() {
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [changed, saved])
+
+  // The preview tab is the real site, carried inside this file. It asks for content when it opens (`ready`), and gets the
+  // settings again, a moment after each edit. Attached PDFs are only sent when they change, since they can be large.
+  const post = useCallback(
+    (withFiles: boolean) => {
+      const w = previewWin.current
+      if (!w || w.closed) return
+      w.postMessage({ type: 'lsa-preview', content, siteUrl, files: withFiles ? [...files] : undefined }, '*')
+    },
+    [content, files, siteUrl],
+  )
+  const postRef = useRef(post)
+  useEffect(() => {
+    postRef.current = post
+  }, [post])
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (previewWin.current && e.source === previewWin.current && e.data?.type === 'lsa-preview-ready') postRef.current(true)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+  useEffect(() => {
+    const t = setTimeout(() => postRef.current(false), 250)
+    return () => clearTimeout(t)
+  }, [content, siteUrl])
+  useEffect(() => {
+    postRef.current(true)
+  }, [files])
+
+  const openPreview = () => {
+    setPreviewNote('')
+    if (previewWin.current && !previewWin.current.closed) {
+      previewWin.current.focus()
+      return postRef.current(true)
+    }
+    const url = URL.createObjectURL(new Blob([previewHtml], { type: 'text/html' }))
+    previewWin.current = window.open(url, 'lsa-preview')
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    if (!previewWin.current) setPreviewNote('Your browser blocked the preview tab. Allow pop-ups for this page, then try again.')
+  }
 
   const fetchRemote = useCallback(
     (path: string): Promise<Uint8Array | undefined> => {
@@ -266,9 +310,11 @@ export default function EditorApp() {
             <div className="ed-loaded">
               <span>{loaded.label}</span>
               <Btn kind="ghost" onClick={() => setShowLoad(true)}>Load different settings</Btn>
+              <Btn kind="primary" onClick={openPreview} title="Opens the real site in a new tab, showing your unsaved changes as you make them">Preview the site</Btn>
             </div>
           )}
         </div>
+        {previewNote && <p className="ed-error" role="alert">{previewNote}</p>}
         {loaded && !showLoad && (
           <nav className="ed-tabs" aria-label="Sections">
             {TABS.map(([id, label]) => (

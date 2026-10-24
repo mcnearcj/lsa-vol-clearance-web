@@ -4,6 +4,7 @@ import { FORMS, FORM_ORDER } from '../data/forms'
 import { groups, orderedRequirements, requirements } from '../data/requirements'
 import { site } from '../data/site'
 import type { Content } from './schema'
+import { contentApplied } from './useContent'
 
 // The site's content lives in a few module-level lists and objects (checklist items, forms, school info…). Loading
 // a school's content.json updates them in place before the page is drawn, so the rest of the code reads them as before.
@@ -62,4 +63,5 @@ export function applyContent(c: Content): void {
       formFields[f.id] = [...new Set([...fieldsUsedBy((f.placements ?? []).map((p) => p.source)), ...(f.placements ?? []).flatMap((p) => (p.when ? [p.when.field] : []))])]
     else formFields[f.id] = []
   }
+  contentApplied()
 }

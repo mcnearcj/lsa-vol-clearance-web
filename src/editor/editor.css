@@ -28,7 +28,7 @@ textarea { resize: vertical; }
 .ed-grid.link { grid-template-columns: 1fr 2fr auto; align-items: end; }
 .ed-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
 .ed-col { display: flex; flex-direction: column; gap: 6px; }
-.ed-btn { font: inherit; border-radius: 8px; padding: 8px 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.ed-btn { white-space: nowrap; font: inherit; border-radius: 8px; padding: 8px 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
 .ed-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .ed-btn.danger { color: var(--bad); border-color: var(--bad); }
 .ed-btn.ghost { border-color: transparent; color: var(--muted); }
@@ -78,7 +78,8 @@ code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
 .ed-row.between { justify-content: space-between; align-items: flex-start; margin-top: 0; }
 .ed-row.tight { margin: 0; flex-wrap: nowrap; }
 .ed-row.tight input { flex: 1; }
-.ed-loaded { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 0.9rem; max-width: 460px; }
+.ed-loaded { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; color: var(--muted); font-size: 0.9rem; max-width: 560px; }
+.ed-loaded > span { flex-basis: 100%; text-align: right; word-break: break-all; }
 .ed-load { max-width: 760px; margin: 0 auto; }
 .ed-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 6px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 0.78rem; text-align: center; }
 .ed-changes { margin: 8px 0 16px; }

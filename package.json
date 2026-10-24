@@ -9,8 +9,9 @@
     "lint": "oxlint",
     "test": "vitest run",
     "preview": "vite preview",
-    "build:editor": "vite build --config vite.editor.config.ts",
-    "build:all": "npm run build && npm run build:editor"
+    "build:editor": "npm run build:preview && vite build --config vite.editor.config.ts",
+    "build:all": "npm run build && npm run build:editor",
+    "build:preview": "vite build --config vite.preview.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/dancing-script": "^5.3.0",

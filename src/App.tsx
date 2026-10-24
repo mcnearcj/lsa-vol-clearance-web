@@ -4,6 +4,8 @@ import { RequirementCard } from './components/RequirementCard'
 import { FormsPanel } from './components/FormsPanel'
 import { Rich } from './components/Rich'
 import { StoragePrompt } from './components/StoragePrompt'
+import { assetUrl } from './content/assets'
+import { useContentVersion } from './content/useContent'
 import { faq } from './data/faq'
 import { groups, orderedRequirements } from './data/requirements'
 import { site } from './data/site'
@@ -20,7 +22,7 @@ const tabs: [Tab, string][] = [
   ['help', 'Help'],
 ]
 
-const asset = (file: string) => `${import.meta.env.BASE_URL}${file}`
+const asset = assetUrl
 
 export default function App() {
   const [mode, setMode] = useState<StorageMode | null>(getStorageMode)
@@ -48,6 +50,7 @@ export default function App() {
 }
 
 function Tracker({ mode, onModeChange }: { mode: StorageMode; onModeChange: (m: StorageMode) => void }) {
+  useContentVersion() // draws again when the editor's preview gets new content
   const [tab, setTabState] = useState<Tab>('checklist')
   const [profile, setProfile] = useStored<Profile>('profile', emptyProfile)
   const [progress, setProgress] = useStored<Progress>('progress', {})

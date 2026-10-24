@@ -59,8 +59,10 @@ site asks volunteers for ("My info").
    see now. You can switch to **Open a settings file instead** and choose the `content.json` from your site folder's
    `data` folder if loading from the address doesn't work. If the site has no settings of its own yet, it starts from
    the built-in ones.
-2. Make your changes. The **Save** tab shows exactly what changed (click a heading to see the details) and warns
-   about anything missing.
+2. Make your changes. Click **Preview the site** at any time: a new tab opens with the real site, showing your unsaved
+   changes and updating as you edit (including forms you've just attached). Nothing in the preview is saved or sent
+   anywhere. Your browser may ask you to allow pop-ups for the editor the first time. The **Save** tab shows exactly
+   what changed (click a heading to see the details) and warns about anything missing.
 3. Click **Download site-data.zip** and unzip it. You get a folder named `data`.
 4. Put that `data` folder into your site folder, next to `index.html`, replacing the old one.
 5. Upload the whole site folder to the host (for Cloudflare Pages: your project → **Create deployment** → drag the folder in).
@@ -82,7 +84,7 @@ Pick the kind that fits the PDF:
 In the box-placing view the page is on the left and the controls are on the right. Drag on the page to draw a box,
 drag a box to move it, and drag its edges or corners to resize it. Each box is labeled with what goes in it.
 
-Every form has a **Preview with sample information** button. Always use it before saving: it fills the form with made-up
+Every form has a **Preview with sample information** button, and **Preview the site** shows the whole site. Always use it before saving: it fills the form with made-up
 details so you can see whether everything lands on its line. Allow 15 to 30 minutes for a new form without boxes.
 
 If the form needs something the site doesn't ask for yet (a shoe size, a car's plate number), add it first under

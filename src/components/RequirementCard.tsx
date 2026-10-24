@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import { standing, standingLabel, todayISO, type Standing } from '../dates'
 import { formInfo } from '../data/forms'
 import type { ItemProgress, Requirement } from '../types'
+import { assetUrl } from '../content/assets'
 import { Rich } from './Rich'
 
 interface Props {
@@ -140,7 +141,7 @@ export function RequirementCard({ req, progress, onChange, onGoToForms }: Props)
             ))}
             {req.references?.map((r) => (
               <li key={r.file}>
-                <a href={`${import.meta.env.BASE_URL}${r.file}`} target="_blank" rel="noreferrer noopener">
+                <a href={assetUrl(r.file)} target="_blank" rel="noreferrer noopener">
                   {r.label} (PDF)
                   <span className="ext" aria-label="(opens in a new tab)">
                     ↗
