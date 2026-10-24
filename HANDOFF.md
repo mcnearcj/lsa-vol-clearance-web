@@ -42,10 +42,68 @@ the page; if the page is embedded in a frame, some browsers won't remember it. A
 If neither of the above works, I keep it online at my own address and you add a link on your volunteer page. No work
 beyond the link for you.
 
-## Updating it
+## Updating the wording, contacts and forms (no coding)
 
-The diocese updates its checklist and forms now and then. I'll watch for changes and send you a new `site.zip`. Do the
-same four steps: Cloudflare Pages → the project → **Create new deployment** → drag in the new contents.
+Everything a school might need to change is edited in a separate program, **the site editor** (`editor.html`). It's one
+file you keep on your own computer and open by double-clicking. It is **not** uploaded to the website, so nobody else
+can use it. Nothing it does goes live until you upload the file it makes.
+
+You can change: the school name, coordinator and diocese contact; the diocese's checklist name, date and links; every
+checklist item (steps, links, instruction sheets); the forms; the questions on the Help page; and extra details the
+site asks volunteers for ("My info").
+
+**Each time:**
+
+1. Open `editor.html`. Click **Open my settings** and choose the `content.json` from your site folder's `data` folder.
+   (The first time there isn't one yet: click **Start from the built-in settings**.)
+2. Make your changes. The **Save** tab lists what changed and warns about anything missing.
+3. Click **Download site-data.zip** and unzip it. You get a folder named `data`.
+4. Put that `data` folder into your site folder, next to `index.html`, replacing the old one.
+5. Upload the whole site folder to the host (for Cloudflare Pages: your project → **Create deployment** → drag the folder in).
+6. Open the website and check the Help page.
+
+**Keep one site folder** (the unzipped `site.zip` plus its `data` folder) on your computer. Uploading it replaces the
+whole site, so it must always contain the `data` folder, or your changes disappear.
+
+### Adding or changing a form
+
+Pick the kind that fits the PDF:
+
+| The PDF… | Choose | What you do |
+| --- | --- | --- |
+| is just a page to print and fill in by hand | **A PDF to print** | Give it a name. Either attach the PDF or paste the diocese's web address; volunteers open it from there. |
+| has fill-in boxes (click in it and text boxes light up) | **A PDF that has fill-in fields** | Attach it. The editor lists the boxes and you choose what goes in each one (name, address, date, signature…). |
+| has no boxes, or is a scan | **A PDF without fields** | Attach it. Click and drag a box over each line on the page, then choose what goes in it. For a check box or circle, draw a small box over it and choose "X mark" or "Filled dot". |
+
+Every form has a **Preview with sample information** button. Always use it before saving: it fills the form with made-up
+details so you can see whether everything lands on its line. Allow 15 to 30 minutes for a new form without boxes.
+
+If the form needs something the site doesn't ask for yet (a shoe size, a car's plate number), add it first under
+**My info details**, then pick it when you set up the form. Mark it "never save" for anything private; the site then asks
+for it only when making the files.
+
+**When the diocese changes a form:** download the new PDF from the diocese's page, open the form in the editor, and
+click **Replace the PDF**, then preview it. If the form has fields, check that each one still gets the right answer.
+If you placed the boxes yourself and the new page is laid out differently, move or redraw the boxes. Do the same for
+the checklist PDF under **Diocese checklist**, and update the "revised on" date and the "last compared" date.
+
+**The six built-in forms** (Sexual Abuse, Code of Conduct, Social Media, CPSL, Background Check Authorization and NSOR)
+have their layouts built into the site. You can change their wording and links, and swap in a revised PDF only if its
+layout hasn't changed. If a built-in form's layout changes, ask a technical person, or remove it here and add the new
+version as a form you place yourself.
+
+### If something goes wrong
+
+- The site always opens even if the settings file has a mistake: it falls back to the built-in settings. If your changes
+  don't appear, re-open the editor, check the **Save** tab for warnings, and upload again.
+- Keep the last `site-data.zip` that worked. Uploading it again puts things back.
+
+## Updating the site itself
+
+When the site's code changes, I'll send a new `site.zip`. Unzip it into a fresh folder, copy your `data` folder into it,
+and upload that folder the same way. The editor file stays the same unless I send a new one.
+
+For which kinds of web hosting work, see [HOSTING-REQUIREMENTS.md](HOSTING-REQUIREMENTS.md).
 
 ## After it's live, please check
 
@@ -53,3 +111,4 @@ same four steps: Cloudflare Pages → the project → **Create new deployment** 
 - [ ] A form opens, "Generate my documents" works, and Open and Download both work.
 - [ ] Choosing "erase" and closing the tab leaves nothing behind when you reopen the site.
 - [ ] The links to the diocese's pages open.
+- [ ] After your first edit in the editor: the change shows on the website (check the Help page).
