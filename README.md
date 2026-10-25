@@ -27,7 +27,7 @@ npm run build     # static site in dist/
 `src/index.css` follows lsabear.com: navy `#0d1d5b`, sky blue `#5eb1e6`, Source Sans 3 (text) and Oswald (navigation and
 buttons), both bundled, a header with the crest and a footer with the address (`src/components/SiteChrome.tsx`). The
 crest, tagline, school link, address and phone are optional settings (`school.logoUrl` etc.); the crest is loaded from the
-school's own website, not stored here. Light and dark follow the visitor's device.
+school's own website, not stored here. It is always light (no dark theme), to stay with the school's site.
 
 ## The demo site's Migration info tab
 

@@ -1,6 +1,6 @@
 /* Look: follows the school's own website (lsabear.com): white page, navy (#0d1d5b) headings, links and footer, a sky-blue
    (#5eb1e6) accent, Source Sans 3 for text and Oswald for navigation and buttons. Flat cards with thin borders.
-   Green, amber and red are used only for status. */
+   Green, amber and red are used only for status. Light only: there is no dark theme. */
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
@@ -32,63 +32,9 @@
   --font-nav: 'Oswald Variable', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --radius: 4px;
   --shell: 920px;
-  color-scheme: light;
+  /* Always light, to stay with the school's website, whatever the visitor's device prefers. */
+  color-scheme: light only;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #0a1030;
-    --surface: #101847;
-    --surface-2: #152056;
-    --text: #eaeefb;
-    --muted: #aeb8dc;
-    --line: #2b3770;
-    --heading: #eaeefb;
-    --band: #070c28;
-    --band-text: #ffffff;
-    --band-muted: #b7c2e6;
-    --accent: #8cc8f2;
-    --accent-hover: #b0d9f7;
-    --accent-soft: #1a2a63;
-    --on-accent: #0a1030;
-    --ok: #5cc993;
-    --ok-soft: #15301f;
-    --warn: #f0b04f;
-    --warn-soft: #362812;
-    --bad: #ff8b80;
-    --bad-soft: #3a1a18;
-    --on-status: #0f141d;
-    --focus: #8cc8f2;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%);
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-  --bg: #0a1030;
-  --surface: #101847;
-  --surface-2: #152056;
-  --text: #eaeefb;
-  --muted: #aeb8dc;
-  --line: #2b3770;
-  --heading: #eaeefb;
-  --band: #070c28;
-  --band-text: #ffffff;
-  --band-muted: #b7c2e6;
-  --accent: #8cc8f2;
-  --accent-hover: #b0d9f7;
-  --accent-soft: #1a2a63;
-  --on-accent: #0a1030;
-  --ok: #5cc993;
-  --ok-soft: #15301f;
-  --warn: #f0b04f;
-  --warn-soft: #362812;
-  --bad: #ff8b80;
-  --bad-soft: #3a1a18;
-  --on-status: #0f141d;
-  --focus: #8cc8f2;
-  --shadow: 0 1px 2px rgb(0 0 0 / 30%);
-  color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
